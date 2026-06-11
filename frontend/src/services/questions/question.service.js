@@ -52,7 +52,35 @@ function handleQuestionError(error) {
   return new Error(backendMessage || 'An unexpected error occurred.');
 }
 
+/**
+ * Creates a new question.
+ * @param {Object} questionData - { title, content }
+ */
+async function createQuestion(questionData) {
+  try {
+    const response = await apiClient.post('/api/questions', questionData);
+    return response.data;
+  } catch (error) {
+    throw handleQuestionError(error);
+  }
+}
+
+/**
+ * Generates AI feedback for a question draft.
+ * @param {Object} draftData - { title, content }
+ */
+async function generateQuestionDraftCoach(draftData) {
+  try {
+    const response = await apiClient.post('/api/questions/draft-coach', draftData);
+    return response.data;
+  } catch (error) {
+    throw handleQuestionError(error);
+  }
+}
+
 export const questionService = {
   getQuestions,
   searchQuestionsSemantic,
+  createQuestion,
+  generateQuestionDraftCoach,
 };
