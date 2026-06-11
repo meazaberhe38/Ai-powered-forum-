@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { questionService } from '../../services/questions/question.service.js';
 import styles from './PostQuestion.module.css';
-import ui from '../../styles/pageStates.module.css';
-import { Sparkles, CheckCircle2, AlertCircle, Send } from 'lucide-react';
+import { Sparkles, Send, Bold, Italic, Code, Link as LinkIcon, Check } from 'lucide-react';
 
 export default function PostQuestion() {
   const navigate = useNavigate();
@@ -12,16 +11,16 @@ export default function PostQuestion() {
   const [isCoaching, setIsCoaching] = useState(false);
   const [coachFeedback, setCoachFeedback] = useState(null);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
+  const [successData, setSuccessData] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
 
   const validate = () => {
     const errors = {};
-    if (!formData.title || formData.title.trim().length < 5) {
-      errors.title = 'Title must be at least 5 characters.';
+    if (!formData.title || formData.title.trim().length < 5 || formData.title.trim().length > 255) {
+      errors.title = 'Question title must be at least 5 characters';
     }
     if (!formData.content || formData.content.trim().length < 10) {
-      errors.content = 'Content must be at least 10 characters.';
+      errors.content = 'Question content must be at least 10 characters';
     }
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
@@ -29,7 +28,6 @@ export default function PostQuestion() {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    // Clear specific error on typing
     if (validationErrors[e.target.name]) {
       setValidationErrors({ ...validationErrors, [e.target.name]: null });
     }
@@ -37,7 +35,10 @@ export default function PostQuestion() {
   };
 
   const handleCoachDraft = async () => {
-    if (!validate()) return;
+    if (!formData.title || !formData.content) {
+      validate();
+      return;
+    }
     setIsCoaching(true);
     setCoachFeedback(null);
     setError(null);
@@ -56,141 +57,187 @@ export default function PostQuestion() {
     if (!validate()) return;
     setIsSubmitting(true);
     setError(null);
-    setSuccess(null);
     try {
-      await questionService.createQuestion(formData);
-      setSuccess('Question posted successfully! Redirecting...');
-      setTimeout(() => navigate('/dashboard'), 2000);
+      const response = await questionService.createQuestion(formData);
+      setSuccessData(response.data || response);
     } catch (err) {
-      setError(err.message || 'Failed to post question. Please try again.');
+      setError('Failed to post question. Please try again.');
+    } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleCancel = () => {
+    navigate(-1);
+  };
+
+  if (successData) {
+    return (
+      <div className={styles.pageContainer}>
+        <div className={styles.header}>
+          <span className={styles.headerLabel}>ASK THE COHORT</span>
+          <h1 className={styles.title}>Publish to the forum</h1>
+          <p className={styles.subtitle}>
+            Public threads help the whole cohort. Write as if a classmate will debug your issue tomorrow. They only know what you put on the page.
+          </p>
+        </div>
+
+        <div className={styles.formCard}>
+          <div className={styles.successContainer}>
+            <div className={styles.successIcon}>
+              <Check size={40} strokeWidth={3} />
+            </div>
+            <h2 className={styles.successTitle}>Thread published</h2>
+            <p className={styles.successText}>
+              Your post is indexed for keyword search and embedding-based similarity. Share the link in study groups, or stay on the thread to answer follow-up questions from peers.
+            </p>
+            <div className={styles.successActions}>
+              <Link to="/dashboard" className={styles.dashboardLink}>Back to Dashboard</Link>
+              {successData.questionHash || successData.id ? (
+                <Link to={`/questions/${successData.questionHash || successData.id}`} className={styles.viewQuestionBtn}>
+                  View Question
+                </Link>
+              ) : (
+                <button className={styles.viewQuestionBtn} onClick={() => navigate('/dashboard')}>
+                  View Question
+                </button>
+              )}
+              <button className={styles.askAnotherBtn} onClick={() => {
+                setSuccessData(null);
+                setFormData({ title: '', content: '' });
+              }}>
+                Ask Another
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.pageContainer}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Ask a public question</h1>
+        <span className={styles.headerLabel}>ASK THE COHORT</span>
+        <h1 className={styles.title}>Publish to the forum</h1>
         <p className={styles.subtitle}>
-          Get help from the community by providing clear details and context.
+          Public threads help the whole cohort. Write as if a classmate will debug your issue tomorrow. They only know what you put on the page.
         </p>
       </div>
 
-      <div className={styles.mainGrid}>
-        <div className={styles.formContainer}>
-          <div className={styles.card}>
-            {success && <div className={styles.successMessage}>{success}</div>}
-            {error && (
-              <div className={`${ui.pageStates__message} ${ui['pageStates__message--error']}`} style={{ marginBottom: '1rem' }}>
-                <AlertCircle size={24} />
-                <span>{error}</span>
-              </div>
-            )}
-            
-            <form onSubmit={handleSubmit} className={styles.form}>
-              <div className={styles.formGroup}>
-                <label htmlFor="title" className={styles.label}>
-                  Title
-                </label>
-                <input
-                  type="text"
-                  id="title"
-                  name="title"
-                  placeholder="e.g. Is there an R function for finding the index of an element in a vector?"
-                  className={styles.input}
-                  value={formData.title}
-                  onChange={handleChange}
-                  disabled={isSubmitting || success !== null}
-                />
-                {validationErrors.title && (
-                  <span className={styles.errorText}>{validationErrors.title}</span>
-                )}
-              </div>
+      <div className={styles.infoBanner}>
+        <h3>Write questions people can answer in one pass</h3>
+        <p>Mentors volunteer their time. Give them runnable context, expected vs actual behavior, and a tight scope so they can reproduce the issue without guessing your setup.</p>
+        
+        <h4 className={styles.infoSectionTitle}>Checklist before you post</h4>
+        <ul className={styles.infoList}>
+          <li><strong>Title as a headline</strong> that states the symptom and tech stack (e.g., "React 19: state resets after navigation").</li>
+          <li><strong>Repro steps</strong> numbered, with environment (OS, browser, Node version) when it matters.</li>
+          <li><strong>Minimal code</strong> in fenced markdown blocks; trim unrelated lines so readers scan faster.</li>
+          <li><strong>Exact errors</strong> copied verbatim, including stack trace snippets when debugging backend routes.</li>
+        </ul>
 
-              <div className={styles.formGroup}>
-                <label htmlFor="content" className={styles.label}>
-                  What are the details of your problem?
-                </label>
+        <h4 className={styles.infoSectionTitle}>Validation rules (enforced by the form)</h4>
+        <ul className={styles.infoList}>
+          <li><strong>Title length:</strong> Must be between 5 and 255 characters.</li>
+          <li><strong>Body length:</strong> Must contain a minimum of 10 characters detailing your problem.</li>
+          <li><strong>Single topic:</strong> Split unrelated bugs into separate threads so search and embeddings stay precise.</li>
+        </ul>
+      </div>
+
+      <div className={styles.formCard}>
+        {error && (
+          <div className={styles.errorMessage}>
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <div className={styles.formGroup}>
+            <label htmlFor="title" className={styles.label}>Title</label>
+            <span className={styles.sublabel}>Be specific and imagine you're asking a question to another person.</span>
+            <input
+              type="text"
+              id="title"
+              name="title"
+              className={`${styles.input} ${validationErrors.title ? styles.inputError : ''}`}
+              value={formData.title}
+              onChange={handleChange}
+              disabled={isSubmitting}
+            />
+            {validationErrors.title && (
+              <span className={styles.errorText}>{validationErrors.title}</span>
+            )}
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="content" className={styles.label}>What are the details of your problem?</label>
+            <span className={styles.sublabel}>Introduce the problem and expand on what you put in the title. Minimum 10 characters.</span>
+            <div className={`${styles.textareaContainer} ${validationErrors.content ? styles.textareaContainerError : ''}`}>
+              <div className={styles.toolbar}>
+                <div className={styles.toolbarActions}>
+                  <button type="button" className={styles.toolbarBtn}><Bold size={16} /></button>
+                  <button type="button" className={styles.toolbarBtn}><Italic size={16} /></button>
+                  <button type="button" className={styles.toolbarBtn}><Code size={16} /></button>
+                  <button type="button" className={styles.toolbarBtn}><LinkIcon size={16} /></button>
+                </div>
+                <span className={styles.charCount}>{formData.content.length} characters</span>
+              </div>
+              <div className={styles.textareaWrapper}>
                 <textarea
                   id="content"
                   name="content"
-                  placeholder="Introduce the problem and expand on what you put in the title. Minimum 10 characters."
+                  placeholder="Include all the information someone would need to answer your question... You can use Markdown to format your code!"
                   className={styles.textarea}
                   value={formData.content}
                   onChange={handleChange}
-                  disabled={isSubmitting || success !== null}
+                  disabled={isSubmitting}
                 />
-                {validationErrors.content && (
-                  <span className={styles.errorText}>{validationErrors.content}</span>
-                )}
-              </div>
-
-              <div className={styles.buttonGroup}>
-                <button
-                  type="button"
-                  className={styles.btnCoach}
-                  onClick={handleCoachDraft}
-                  disabled={isCoaching || isSubmitting || success !== null}
-                >
-                  <Sparkles size={18} />
-                  {isCoaching ? 'Analyzing...' : 'Get AI Feedback'}
-                </button>
-                <button
-                  type="submit"
-                  className={styles.btnSubmit}
-                  disabled={isSubmitting || isCoaching || success !== null}
-                >
-                  <Send size={18} style={{ display: 'inline', marginRight: '8px' }} />
-                  {isSubmitting ? 'Posting...' : 'Post Question'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-
-        <div className={styles.sidebar}>
-          {coachFeedback ? (
-            <div className={styles.coachPanel}>
-              <div className={styles.coachHeader}>
-                <Sparkles size={24} />
-                <span>AI Draft Coach Feedback</span>
-              </div>
-              <div className={styles.coachTips}>
-                {Array.isArray(coachFeedback) ? (
-                  coachFeedback.map((tip, index) => (
-                    <div key={index} className={styles.tipItem}>
-                      {tip}
-                    </div>
-                  ))
-                ) : (
-                  <div className={styles.tipItem}>{coachFeedback}</div>
-                )}
               </div>
             </div>
-          ) : (
-            <div className={styles.infoCard}>
-              <h3 className={styles.infoTitle}>Step 1: Draft your question</h3>
-              <ul className={styles.infoList}>
-                <li className={styles.infoListItem}>
-                  <CheckCircle2 className={styles.infoIcon} size={18} />
-                  <span>Summarize your problem in a one-line title.</span>
-                </li>
-                <li className={styles.infoListItem}>
-                  <CheckCircle2 className={styles.infoIcon} size={18} />
-                  <span>Describe your problem in more detail.</span>
-                </li>
-                <li className={styles.infoListItem}>
-                  <CheckCircle2 className={styles.infoIcon} size={18} />
-                  <span>Describe what you tried and what you expected to happen.</span>
-                </li>
-                <li className={styles.infoListItem}>
-                  <CheckCircle2 className={styles.infoIcon} size={18} />
-                  <span>Review your question and post it to the site.</span>
-                </li>
+            {validationErrors.content && (
+              <span className={styles.errorText}>{validationErrors.content}</span>
+            )}
+          </div>
+
+          <div className={styles.aiSection}>
+            <button
+              type="button"
+              className={styles.aiBtn}
+              onClick={handleCoachDraft}
+              disabled={isCoaching || isSubmitting}
+            >
+              <Sparkles size={16} />
+              AI suggestions
+            </button>
+            <span className={styles.aiDisclaimer}>Suggestions only. You still choose what to post.</span>
+          </div>
+
+          {coachFeedback && (
+            <div className={styles.aiFeedbackPanel}>
+              <div className={styles.aiFeedbackTitle}>
+                <Sparkles size={16} /> AI Draft Coach Feedback
+              </div>
+              <ul className={styles.aiFeedbackList}>
+                {Array.isArray(coachFeedback) ? (
+                  coachFeedback.map((tip, idx) => <li key={idx}>{tip}</li>)
+                ) : (
+                  <li>{coachFeedback}</li>
+                )}
               </ul>
             </div>
           )}
-        </div>
+
+          <div className={styles.formActions}>
+            <button type="button" className={styles.cancelBtn} onClick={handleCancel} disabled={isSubmitting}>
+              Cancel
+            </button>
+            <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
+              {isSubmitting ? 'Posting...' : 'Post Question'}
+              {!isSubmitting && <Send size={16} />}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
