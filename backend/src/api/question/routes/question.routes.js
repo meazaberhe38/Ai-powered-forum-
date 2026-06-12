@@ -1,9 +1,16 @@
 import express from "express";
 import { authenticateUser } from "../../../middleware/authentication.js";
-import { createQuestionValidation } from "../validations/question.validation.js";
-import { createQuestionController } from "../controller/question.controller.js";
+import { createQuestionValidation, generateQuestionDraftCoachValidation } from "../validations/question.validation.js";
+import { createQuestionController,  generateQuestionDraftCoachController } from "../controller/question.controller.js";
 
 const router = express.Router();
+
+router.post(
+  '/draft-coach',
+  authenticateUser,
+  generateQuestionDraftCoachValidation,
+  generateQuestionDraftCoachController,
+);
 
 router.post(
   "/",
