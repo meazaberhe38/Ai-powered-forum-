@@ -16,7 +16,7 @@ export const getGeminiClient = () => {
 export const embedQuery = async (queryText) => {
   const ai = getGeminiClient();
   const response = await ai.models.embedContent({
-    model: 'text-embedding-004',
+    model: process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001',
     contents: queryText,
     config: {
       taskType: 'RETRIEVAL_QUERY',
