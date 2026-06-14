@@ -3,7 +3,8 @@ import {
   createQuestionWithVectorService,
   getQuestionsService,
   getSingleQuestionService,
-      getSimilarQuestionsService,
+  getSimilarQuestionsService,
+  searchQuestionsSemanticService,
 } from "../service/question.service.js";
 
                                     
