@@ -10,6 +10,7 @@ const router = express.Router();
  * @desc Get RAG Document Metadata
  * @access Private
  */
+
 router.get(
   "/documents/:documentId",
   authenticateUser,
