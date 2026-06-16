@@ -15,7 +15,40 @@ import { cosineSimilarity } from "../../../utils/math.js";
 const K_CHUNKS = 5;
 
 /**
- * Get Document Metadata Service
+ * List all documents owned by the authenticated user.
+ */
+export const listDocumentsForUserService = async (userId) => {
+  const sql = `
+    SELECT 
+      document_id,
+      title,
+      mime_type,
+      byte_size,
+      status,
+      error_message,
+      created_at,
+      updated_at
+    FROM documents
+    WHERE user_id = ?
+    ORDER BY created_at DESC
+  `;
+
+  const rows = await safeExecute(sql, [userId]);
+
+  return rows.map((row) => ({
+    document_id: row.document_id,
+    title: row.title,
+    mime_type: row.mime_type,
+    byte_size: row.byte_size,
+    status: row.status,
+    error_message: row.error_message,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  }));
+};
+
+/**
+ * Get document metadata by ID, ensuring it belongs to the authenticated user.
  */
 export const getDocumentMetaService = async (documentId, userId) => {
   const sql = `
@@ -37,19 +70,37 @@ export const getDocumentMetaService = async (documentId, userId) => {
   const rows = await safeExecute(sql, [documentId, userId]);
 
   if (rows.length === 0) {
-    throw new NotFoundError("Document not found");
+    throw new NotFoundError("Document not found or you do not have access");
   }
 
-  return rows[0];
+  const row = rows[0];
+
+  return {
+    document_id: row.document_id,
+    title: row.title,
+    mime_type: row.mime_type,
+    byte_size: row.byte_size,
+    status: row.status,
+    error_message: row.error_message,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    user_id: row.user_id,
+    storage_path: row.storage_path,
+  };
+};
+
+/**
+ * Convenience method: alias for getDocumentMetaService, often used
+ * prior to operating on the file to ensure ownership.
+ */
+export const assertOwnedDocument = async (documentId, userId) => {
+  return await getDocumentMetaService(documentId, userId);
 };
 
 /**
  * Upload & Process Document
  */
-export async function createDocumentFromUploadService({
-  file,
-  userId,
-}) {
+export async function createDocumentFromUploadService({ file, userId }) {
   validateUploadedDocument(file);
 
   if (!userId) {
@@ -139,12 +190,7 @@ export async function createDocumentFromUploadService({
         )
         VALUES (?, ?, ?, ?)
         `,
-        [
-          chunkId,
-          chunk,
-          JSON.stringify(embeddingResult.embedding),
-          "ready",
-        ],
+        [chunkId, chunk, JSON.stringify(embeddingResult.embedding), "ready"],
       );
     }
 
@@ -193,21 +239,15 @@ export async function searchInDocumentService({
   k = 5,
   userId,
 }) {
-  const doc = await getDocumentMetaService(
-    documentId,
-    userId,
-  );
+  const doc = await getDocumentMetaService(documentId, userId);
 
   if (doc.status !== "ready") {
     throw new Error("Document is not ready for search");
   }
 
-  const queryEmbedding = await generateQuestionEmbedding(
-    query,
-    {
-      taskType: "RETRIEVAL_QUERY",
-    },
-  );
+  const queryEmbedding = await generateQuestionEmbedding(query, {
+    taskType: "RETRIEVAL_QUERY",
+  });
 
   const queryVector = queryEmbedding.embedding;
 
@@ -264,10 +304,7 @@ export async function searchInDocumentService({
 /**
  * Generate Answer From Retrieved Chunks
  */
-const answerFromRagChunksService = async (
-  query,
-  contextText,
-) => {
+const answerFromRagChunksService = async (query, contextText) => {
   try {
     const ai = getGeminiClient();
 
@@ -288,32 +325,22 @@ ${query}
 Answer:
 `;
 
-    const response =
-      await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-      });
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
 
     return response.text;
   } catch {
-    throw new ServiceUnavailableError(
-      "Failed to generate answer from AI",
-    );
+    throw new ServiceUnavailableError("Failed to generate answer from AI");
   }
 };
 
 /**
  * Full RAG Query Service
  */
-export const queryDocumentService = async (
-  documentId,
-  userId,
-  query,
-) => {
-  await getDocumentMetaService(
-    documentId,
-    userId,
-  );
+export const queryDocumentService = async (documentId, userId, query) => {
+  await getDocumentMetaService(documentId, userId);
 
   const queryEmbedding = await embedQuery(query);
 
@@ -335,8 +362,7 @@ export const queryDocumentService = async (
 
   if (chunkRows.length === 0) {
     return {
-      answer:
-        "No processed text chunks found for this document.",
+      answer: "No processed text chunks found for this document.",
       citations: [],
       chunksUsed: [],
     };
@@ -350,10 +376,7 @@ export const queryDocumentService = async (
 
     return {
       ...row,
-      score: cosineSimilarity(
-        queryEmbedding,
-        embedding,
-      ),
+      score: cosineSimilarity(queryEmbedding, embedding),
     };
   });
 
@@ -362,17 +385,10 @@ export const queryDocumentService = async (
     .slice(0, K_CHUNKS);
 
   const contextText = topChunks
-    .map(
-      (chunk) =>
-        `[Chunk ${chunk.chunk_index}]\n${chunk.content}`,
-    )
+    .map((chunk) => `[Chunk ${chunk.chunk_index}]\n${chunk.content}`)
     .join("\n\n");
 
-  const answer =
-    await answerFromRagChunksService(
-      query,
-      contextText,
-    );
+  const answer = await answerFromRagChunksService(query, contextText);
 
   return {
     answer,
@@ -380,8 +396,6 @@ export const queryDocumentService = async (
       ref: index + 1,
       chunkIndex: chunk.chunk_index,
     })),
-    chunksUsed: topChunks.map(
-      (chunk) => chunk.chunk_index,
-    ),
+    chunksUsed: topChunks.map((chunk) => chunk.chunk_index),
   };
 };

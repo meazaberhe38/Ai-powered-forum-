@@ -23,6 +23,7 @@ mainRouter.use("/questions", questionRoutes);
 mainRouter.use("/answers", answerRoutes);
 
 /**
- * RAG Routes
+ * RAG Documents Routes
  */
+mainRouter.use("/rag/documents", ragRoutes);
 mainRouter.use("/rag", ragRoutes);

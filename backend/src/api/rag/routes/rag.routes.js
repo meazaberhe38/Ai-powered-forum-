@@ -1,42 +1,80 @@
 import express from "express";
 
-const router = express.Router();
-
-
 import { authenticateUser } from "../../../middleware/authentication.js";
-import { getDocumentMetaController, queryDocumentController } from "../controller/rag.controller.js";
-import { documentIdParamValidation, queryDocumentValidation } from "../validations/rag.validation.js";
-import { createDocumentController } from "../controller/rag.controller.js";
 import { uploadDocument } from "../../../middleware/rag.upload.config.js";
-import { authenticateUser } from "../../../middleware/authentication.js";
-import { searchInDocumentController } from "../controller/rag.controller.js";
+
+import {
+  listDocumentsController,
+  getDocumentMetaController,
+  getDocumentFileController,
+  createDocumentController,
+  queryDocumentController,
+  searchInDocumentController,
+} from "../controller/rag.controller.js";
+
+import {
+  documentIdParamValidation,
+  queryDocumentValidation,
+} from "../validations/rag.validation.js";
 
 const router = express.Router();
 
+/**
+ * GET /api/rag/documents
+ */
 router.get(
-  "/documents/:documentId",
+  "/",
   authenticateUser,
-  documentIdParamValidation,
-  getDocumentMetaController
+  listDocumentsController,
 );
 
+/**
+ * POST /api/rag/documents
+ */
 router.post(
-  "/documents",
+  "/",
   authenticateUser,
   uploadDocument.single("file"),
   createDocumentController,
 );
 
+/**
+ * GET /api/rag/documents/:documentId
+ */
+router.get(
+  "/:documentId",
+  authenticateUser,
+  documentIdParamValidation,
+  getDocumentMetaController,
+);
+
+/**
+ * GET /api/rag/documents/:documentId/file
+ */
+router.get(
+  "/:documentId/file",
+  authenticateUser,
+  documentIdParamValidation,
+  getDocumentFileController,
+);
+
+/**
+ * POST /api/rag/documents/:documentId/query
+ */
 router.post(
-  "/documents/:documentId/query",
+  "/:documentId/query",
   authenticateUser,
   queryDocumentValidation,
   queryDocumentController,
-  );
+);
 
+/**
+ * GET /api/rag/documents/:documentId/search
+ */
 router.get(
-  "/documents/:documentId/search",
+  "/:documentId/search",
   authenticateUser,
+  documentIdParamValidation,
   searchInDocumentController,
 );
 

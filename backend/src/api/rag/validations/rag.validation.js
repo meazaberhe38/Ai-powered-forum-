@@ -9,11 +9,9 @@ export function validateUploadedDocument(file) {
   if (!file) {
     throw new Error("PDF file is required");
   }
-
   if (file.mimetype !== "application/pdf") {
     throw new Error("Only PDF files are allowed");
   }
-
   return true;
 }
 
@@ -34,7 +32,6 @@ export const documentIdParamValidation = [
     .isInt({ min: 1 })
     .withMessage("Document ID must be a positive integer")
     .toInt(),
-
   validationErrorHandler,
 ];
 
@@ -46,13 +43,11 @@ export const queryDocumentValidation = [
     .isInt({ min: 1 })
     .withMessage("Document ID must be a positive integer")
     .toInt(),
-
   body("query")
     .notEmpty()
     .withMessage("Query is required")
     .isString()
     .withMessage("Query must be a string")
     .trim(),
-
   validationErrorHandler,
 ];
