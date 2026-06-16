@@ -1,14 +1,18 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "Evangadi AI-Powered Forum Backend API",
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
-    "test": "node --test"
+    "test": "node --test",
+    "db:check-vectors": "node db/scripts/check-vectors.js",
+    "db:fix-vectors": "node db/scripts/fix-vectors.js",
+    "db:check-hashes": "node db/scripts/check-hashes.js",
+    "db:setup": "echo 'Run: mysql -u root -p ai_tutor_db < db/schema.sql'"
   },
-  "keywords": [],
+  "keywords": ["forum", "ai", "gemini", "rag", "semantic-search"],
   "author": "",
   "license": "ISC",
   "type": "module",
