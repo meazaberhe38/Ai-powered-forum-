@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { questionService } from '../../services/questions/question.service.js';
 import { timeAgo } from '../../lib/utils.js';
@@ -13,6 +13,7 @@ import {
   ChevronRight,
   AlertCircle,
   HelpCircle,
+  ThumbsUp,
 } from 'lucide-react';
 export default function Dashboard() {
   const [questions, setQuestions] = useState([]);
@@ -20,36 +21,68 @@ export default function Dashboard() {
   const [searchMode, setSearchMode] = useState('keyword'); // 'keyword' | 'semantic'
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
 
-  const fetchQuestions = async (searchVal = '', mode = searchMode) => {
-    setIsLoading(true);
+  const observer = useRef();
+  const lastQuestionElementRef = useCallback(node => {
+    if (isLoading || isFetchingMore) return;
+    if (observer.current) observer.current.disconnect();
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        setPage(prevPage => prevPage + 1);
+      }
+    });
+    if (node) observer.current.observe(node);
+  }, [isLoading, isFetchingMore, hasMore]);
+
+  const fetchQuestions = async (searchVal = '', mode = searchMode, pageNum = 1, isLoadMore = false) => {
+    if (isLoadMore) {
+      setIsFetchingMore(true);
+    } else {
+      setIsLoading(true);
+    }
     setError(null);
     try {
       let data = [];
+      let currentHasMore = false;
+
       if (searchVal.trim() === '') {
         // Empty search query: fetch all questions
-        const response = await questionService.getQuestions();
+        const response = await questionService.getQuestions({ page: pageNum, limit: 20 });
         data = response.data || [];
+        currentHasMore = response.meta?.hasMore || false;
       } else {
         if (mode === 'semantic') {
           // Semantic search requires min 5 characters (API validation limit)
           if (searchVal.trim().length < 5) {
             setError('AI Semantic search query must be at least 5 characters long.');
-            setIsLoading(false);
+            if (isLoadMore) setIsFetchingMore(false);
+            else setIsLoading(false);
             return;
           }
           const response = await questionService.searchQuestionsSemantic(searchVal);
           data = response.data || [];
+          currentHasMore = false; // Semantic search doesn't paginate
         } else {
-          const response = await questionService.getQuestions({ search: searchVal });
+          const response = await questionService.getQuestions({ search: searchVal, page: pageNum, limit: 20 });
           data = response.data || [];
+          currentHasMore = response.meta?.hasMore || false;
         }
       }
-      setQuestions(data);
+
+      if (isLoadMore) {
+        setQuestions(prev => [...prev, ...data]);
+      } else {
+        setQuestions(data);
+      }
+      setHasMore(currentHasMore);
     } catch (err) {
       setError(err.message || 'Failed to fetch questions. Please try again.');
     } finally {
       setIsLoading(false);
+      setIsFetchingMore(false);
     }
   };
 
@@ -59,7 +92,7 @@ export default function Dashboard() {
     const initFetch = async () => {
       await Promise.resolve();
       if (isMounted) {
-        fetchQuestions();
+        fetchQuestions('', searchMode, 1, false);
       }
     };
     initFetch();
@@ -69,22 +102,32 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Effect to handle page changes for infinite scroll
+  useEffect(() => {
+    if (page > 1) {
+      fetchQuestions(searchQuery, searchMode, page, true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    fetchQuestions(searchQuery, searchMode);
+    setPage(1);
+    fetchQuestions(searchQuery, searchMode, 1, false);
   };
 
   const handleModeChange = (mode) => {
     setSearchMode(mode);
-    // Automatically re-run search if there's an active query
     if (searchQuery.trim() !== '') {
-      fetchQuestions(searchQuery, mode);
+      setPage(1);
+      fetchQuestions(searchQuery, mode, 1, false);
     }
   };
 
   const handleClearSearch = () => {
     setSearchQuery('');
-    fetchQuestions('', searchMode);
+    setPage(1);
+    fetchQuestions('', searchMode, 1, false);
   };
 
   return (
@@ -208,16 +251,18 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className={styles.questionsList}>
-          {questions.map((question) => {
+          {questions.map((question, index) => {
             const authorName = question.author
               ? `${question.author.firstName} ${question.author.lastName}`
               : 'Anonymous';
+            const isLastElement = index === questions.length - 1;
             
             return (
               <Link
                 key={question.questionHash || question.id}
                 to={`/questions/${question.questionHash}`}
                 className={styles.questionCard}
+                ref={isLastElement ? lastQuestionElementRef : null}
               >
                 <div className={styles.cardContent}>
                   <h4 className={styles.questionTitle}>{question.title}</h4>
@@ -228,9 +273,9 @@ export default function Dashboard() {
                       : ''}
                   </p>
                   <div className={styles.questionMeta}>
-                    <span className={styles.metaItem}>
+                    <span className={`${styles.metaItem} ${styles.authorNameItem}`}>
                       <User size={14} />
-                      <span>{authorName}</span>
+                      <span className={styles.authorName}>{authorName}</span>
                     </span>
                     <span className={styles.metaItem}>
                       <Clock size={14} />
@@ -243,6 +288,10 @@ export default function Dashboard() {
                         {(question.answerCount ?? 0) === 1 ? 'answer' : 'answers'}
                       </span>
                     </span>
+                    <span className={styles.metaItem}>
+                      <ThumbsUp size={14} />
+                      <span>{question.likes ?? 0}</span>
+                    </span>
                     {question.score !== undefined && (
                       <span className={`${styles.metaItem} ${styles.scoreBadge}`}>
                         Match: {Math.round(question.score * 100)}%
@@ -254,6 +303,12 @@ export default function Dashboard() {
               </Link>
             );
           })}
+          {isFetchingMore && (
+            <div className={styles.loadingMore}>
+              <div className={styles.spinner} />
+              <span>Loading more questions...</span>
+            </div>
+          )}
         </div>
       )}
     </div>

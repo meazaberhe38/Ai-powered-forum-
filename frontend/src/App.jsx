@@ -28,6 +28,8 @@ import QuestionDetail from "./pages/QuestionDetail/QuestionDetail";
 import Landing from "./pages/Landing/Landing";
 import PostQuestion from "./pages/PostQuestion/PostQuestion";
 import MyQuestions from "./pages/MyQuestions/MyQuestions";
+import Profile from "./pages/Profile/Profile";
+
 import RagDocuments from './pages/RagDocuments/RagDocuments';
 function App() {
   return (
@@ -81,6 +83,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <RagDocuments />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
                 </ProtectedRoute>
               }
             />

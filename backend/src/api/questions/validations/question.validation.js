@@ -39,6 +39,18 @@ export const getQuestionsValidation = [
     .isIn(["true", "false"])
     .withMessage("Mine must be a boolean (true/false)"),
 
+  query("page")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Page must be an integer greater than 0")
+    .toInt(),
+
+  query("limit")
+    .optional()
+    .isInt({ min: 1, max: 100 })
+    .withMessage("Limit must be an integer between 1 and 100")
+    .toInt(),
+
   validationErrorHandler,
 ];
 
@@ -105,5 +117,23 @@ export const validateSimilarQuestions = [
     .withMessage("threshold must be a float between 0 and 1")
     .toFloat(),
 
+  validationErrorHandler,
+];
+
+/**
+ * Generate Question Draft Coach Validation
+ */
+export const generateQuestionDraftCoachValidation = [
+  body("title")
+    .optional()
+    .isString()
+    .withMessage("Title must be a string"),
+  body("content")
+    .notEmpty()
+    .withMessage("Content is required")
+    .isString()
+    .withMessage("Content must be a string")
+    .isLength({ min: 10 })
+    .withMessage("Content must be at least 10 characters long"),
   validationErrorHandler,
 ];
