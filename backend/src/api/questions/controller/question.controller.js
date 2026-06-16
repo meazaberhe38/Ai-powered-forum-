@@ -64,13 +64,15 @@ export const createQuestionController = async (req, res, next) => {
 
 export const getQuestionsController = async (req, res, next) => {
   try {
-    const { search, mine } = req.query;
+    const { search, mine, page = 1, limit = 20 } = req.query;
     const userId = req.user?.id;
 
     const result = await getQuestionsService({
       search: search || null,
       mine: mine === "true",
       userId,
+      page: parseInt(page, 10),
+      limit: parseInt(limit, 10),
     });
 
     res.status(StatusCodes.OK).json(result);

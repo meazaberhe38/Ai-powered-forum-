@@ -123,6 +123,8 @@ export const getQuestionsService = async ({
   search,
   mine,
   userId,
+  page = 1,
+  limit = 20,
 }) => {
   let baseSql = `
     SELECT 
@@ -161,6 +163,8 @@ export const getQuestionsService = async ({
     baseSql += ` WHERE ${whereConditions.join(" AND ")}`;
   }
 
+  const offset = (page - 1) * limit;
+
   baseSql += `
     GROUP BY 
       q.question_id,
@@ -173,7 +177,7 @@ export const getQuestionsService = async ({
       u.first_name,
       u.last_name
     ORDER BY q.created_at DESC
-    LIMIT 100
+    LIMIT ${limit} OFFSET ${offset}
   `;
 
   const rows = await safeExecute(baseSql, params);
@@ -200,8 +204,10 @@ export const getQuestionsService = async ({
     message: "Questions fetched successfully.",
     data,
     meta: {
-      limit: 100,
-      total: data.length,
+      currentPage: page,
+      limit,
+      hasMore: data.length === limit,
+      totalReturned: data.length,
       sortBy: "newest",
       sortOrder: "desc",
     },

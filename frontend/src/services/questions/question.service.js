@@ -3,12 +3,18 @@ import { apiClient } from "../core/api.client.js";
 /**
  * Get all questions
  */
-async function getQuestions({ search } = {}) {
+async function getQuestions({ search, page, limit } = {}) {
   try {
     const params = {};
 
     if (search) {
       params.search = search;
+    }
+    if (page) {
+      params.page = page;
+    }
+    if (limit) {
+      params.limit = limit;
     }
 
     const response = await apiClient.get("/api/questions", {
