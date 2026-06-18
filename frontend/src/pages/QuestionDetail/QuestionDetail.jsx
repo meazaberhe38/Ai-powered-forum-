@@ -62,6 +62,16 @@ export default function QuestionDetail() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Answer edit
+  const [editingAnswerId, setEditingAnswerId] = useState(null);
+  const [editAnswerContent, setEditAnswerContent] = useState('');
+  const [isSavingAnswerEdit, setIsSavingAnswerEdit] = useState(false);
+  const [answerEditError, setAnswerEditError] = useState(null);
+
+  // Answer delete
+  const [deletingAnswerId, setDeletingAnswerId] = useState(null);
+  const [isDeletingAnswer, setIsDeletingAnswer] = useState(false);
+
   const isOwnQuestion = isAuthoredByUser(question, user);
 
   useEffect(() => {
@@ -280,6 +290,44 @@ export default function QuestionDetail() {
       setIsDeleting(false);
       setShowDeleteConfirm(false);
       // Optional: show error toast
+    }
+  };
+
+  const handleSaveAnswerEdit = async (answerId) => {
+    if (!editAnswerContent.trim() || editAnswerContent.trim().length < 20) {
+      setAnswerEditError('Content must be at least 20 characters.');
+      return;
+    }
+
+    setIsSavingAnswerEdit(true);
+    setAnswerEditError(null);
+    try {
+      const response = await answerService.updateAnswer(answerId, editAnswerContent);
+      const updated = response.data || response;
+      setAnswers(prev => prev.map(a =>
+        a.id === answerId
+          ? { ...a, content: updated.content, updatedAt: updated.updatedAt }
+          : a,
+      ));
+      setEditingAnswerId(null);
+      setEditAnswerContent('');
+    } catch (err) {
+      setAnswerEditError(err.message || 'Failed to save answer edit.');
+    } finally {
+      setIsSavingAnswerEdit(false);
+    }
+  };
+
+  const handleDeleteAnswer = async (answerId) => {
+    setIsDeletingAnswer(true);
+    try {
+      await answerService.deleteAnswer(answerId);
+      setAnswers(prev => prev.filter(a => a.id !== answerId));
+      setDeletingAnswerId(null);
+    } catch (err) {
+      console.error('Failed to delete answer', err);
+      setIsDeletingAnswer(false);
+      setDeletingAnswerId(null);
     }
   };
 
@@ -506,6 +554,8 @@ export default function QuestionDetail() {
               const answerAuthorName = answer.author
                 ? `${answer.author.firstName} ${answer.author.lastName}`
                 : 'Anonymous';
+              const isOwnAnswer = isAuthoredByUser(answer, user);
+              const isEditingThisAnswer = editingAnswerId === answer.id;
               return (
                 <article key={answer.id} className={styles.answerCard}>
                   <div className={styles.authorMeta}>
@@ -519,12 +569,72 @@ export default function QuestionDetail() {
                       <div className={styles.authorName}>{answerAuthorName}</div>
                       <div className={styles.authorDate}>
                         {timeAgo(answer.createdAt)}
+                        {answer.createdAt !== answer.updatedAt && ' (edited)'}
                       </div>
                     </div>
+                    {isOwnAnswer && !isEditingThisAnswer && (
+                      <div className={styles.authorActions}>
+                        <button
+                          onClick={() => {
+                            setEditAnswerContent(answer.content);
+                            setEditingAnswerId(answer.id);
+                            setAnswerEditError(null);
+                          }}
+                          className={styles.editBtn}
+                          title='Edit answer'
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => setDeletingAnswerId(answer.id)}
+                          className={styles.deleteBtn}
+                          title='Delete answer'
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <div className={styles.answerContent}>
-                    <ReactMarkdown>{answer.content}</ReactMarkdown>
-                  </div>
+
+                  {isEditingThisAnswer ? (
+                    <div className={styles.editForm}>
+                      <textarea
+                        className={styles.editTextarea}
+                        value={editAnswerContent}
+                        onChange={e => setEditAnswerContent(e.target.value)}
+                        placeholder='Edit your answer...'
+                        rows={6}
+                      />
+                      {answerEditError && (
+                        <div className={styles.errorText}>{answerEditError}</div>
+                      )}
+                      <div className={styles.editActions}>
+                        <button
+                          onClick={() => {
+                            setEditingAnswerId(null);
+                            setEditAnswerContent('');
+                            setAnswerEditError(null);
+                          }}
+                          className={styles.cancelBtn}
+                          disabled={isSavingAnswerEdit}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => handleSaveAnswerEdit(answer.id)}
+                          className={styles.saveBtn}
+                          disabled={isSavingAnswerEdit}
+                        >
+                          {isSavingAnswerEdit ? 'Saving...' : 'Save Changes'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={styles.answerContent}>
+                      <ReactMarkdown>{answer.content}</ReactMarkdown>
+                    </div>
+                  )}
+
                   <div className={styles.threadActions} style={{ marginTop: '16px', paddingTop: '16px' }}>
                     <button 
                       className={`${styles.voteBtn} ${answer.userVote === 1 ? styles.voteActive : ''}`}
@@ -538,6 +648,34 @@ export default function QuestionDetail() {
                 </article>
               );
             })}
+
+            {deletingAnswerId && (
+              <div className={styles.modalOverlay}>
+                <div className={styles.modalContent}>
+                  <h3>Delete Answer</h3>
+                  <p>Are you sure you want to delete this answer? This action cannot be undone.</p>
+                  <div className={styles.modalActions}>
+                    <button
+                      onClick={() => {
+                        setDeletingAnswerId(null);
+                        setIsDeletingAnswer(false);
+                      }}
+                      className={styles.cancelBtn}
+                      disabled={isDeletingAnswer}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => handleDeleteAnswer(deletingAnswerId)}
+                      className={styles.deleteBtnConfirm}
+                      disabled={isDeletingAnswer}
+                    >
+                      {isDeletingAnswer ? 'Deleting...' : 'Delete Permanently'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </section>
 
           {!isOwnQuestion && (
