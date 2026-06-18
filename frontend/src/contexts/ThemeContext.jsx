@@ -4,30 +4,58 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 const ThemeContext = createContext(undefined);
 
 /**
+ * Get the initial theme from localStorage or system preference.
+ * This ensures the state matches what's already applied to the DOM.
+ */
+function getInitialTheme() {
+  try {
+    const stored = localStorage.getItem('theme');
+    if (stored === 'dark' || stored === 'light') {
+      return stored;
+    }
+    // Check system preference
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return prefersDark ? 'dark' : 'light';
+  } catch (e) {
+    // Fallback if localStorage is not available
+    return 'light';
+  }
+}
+
+/**
  * ThemeProvider component that wraps the app and provides theme state.
  * It sets a data attribute on the <html> element to allow CSS custom property overrides.
  */
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState('light'); // default to light
+  // Initialize with the theme that's already applied to the DOM
+  const [theme, setTheme] = useState(getInitialTheme);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Load persisted theme from localStorage on mount
+  // One-time initialization to sync with DOM
   useEffect(() => {
-    const stored = localStorage.getItem('theme');
-    if (stored === 'dark' || stored === 'light') {
-      setTheme(stored);
+    const html = document.documentElement;
+    const currentTheme = html.getAttribute('data-theme');
+    
+    // If DOM already has a theme (from blocking script), use it
+    if (currentTheme && (currentTheme === 'dark' || currentTheme === 'light')) {
+      setTheme(currentTheme);
     } else {
-      // Optional: Detect system preference
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setTheme(prefersDark ? 'dark' : 'light');
+      // Otherwise, apply our initial theme
+      html.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
     }
+    
+    setIsInitialized(true);
   }, []);
 
-  // Whenever theme changes, update <html> attribute and persist
+  // Update DOM and localStorage whenever theme changes
   useEffect(() => {
+    if (!isInitialized) return;
+    
     const html = document.documentElement;
     html.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
-  }, [theme]);
+  }, [theme, isInitialized]);
 
   const toggleTheme = () => {
     setTheme(prev => (prev === 'light' ? 'dark' : 'light'));

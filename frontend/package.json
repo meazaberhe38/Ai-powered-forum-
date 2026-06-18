@@ -13,6 +13,10 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
+    "@tiptap/extension-link": "^3.27.0",
+    "@tiptap/extension-placeholder": "^3.27.0",
+    "@tiptap/react": "^3.27.0",
+    "@tiptap/starter-kit": "^3.27.0",
     "axios": "^1.15.0",
     "framer-motion": "^12.38.0",
     "highlight.js": "^11.11.1",

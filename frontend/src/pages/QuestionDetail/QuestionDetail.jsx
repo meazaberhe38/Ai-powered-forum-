@@ -43,6 +43,7 @@ export default function QuestionDetail() {
   const [answerText, setAnswerText] = useState('');
   const [isPosting, setIsPosting] = useState(false);
   const [postError, setPostError] = useState(null);
+  const [postSuccess, setPostSuccess] = useState(false);
 
   const [fitResult, setFitResult] = useState(null);
   const [isCheckingFit, setIsCheckingFit] = useState(false);
@@ -185,13 +186,43 @@ export default function QuestionDetail() {
 
     setIsPosting(true);
     setPostError(null);
+    setPostSuccess(false);
 
     try {
       const response = await answerService.postAnswer(question.id, answerText);
-      const newAnswer = response.data?.answer || response;
-      setAnswers(prev => [...prev, newAnswer]);
+      const newAnswer = response.data || response;
+      
+      // Normalize the answer structure to match what UI expects
+      const normalizedAnswer = {
+        id: newAnswer.id,
+        content: newAnswer.content,
+        createdAt: newAnswer.createdAt,
+        updatedAt: newAnswer.updatedAt,
+        likes: 0, // New answer starts with 0 likes
+        userVote: 0, // User hasn't voted on their own answer
+        author: newAnswer.author || {
+          id: user?.id,
+          firstName: user?.firstName,
+          lastName: user?.lastName,
+        },
+      };
+      
+      // Add the new answer to the list immediately
+      setAnswers(prev => [...prev, normalizedAnswer]);
+      
+      // Clear the editor and reset state
       setAnswerText('');
       setFitResult(null);
+      
+      // Show success message
+      setPostSuccess(true);
+      setTimeout(() => setPostSuccess(false), 3000);
+      
+      // Also clear the textarea DOM element to ensure UI updates
+      const textarea = document.querySelector(`.${styles.editorTextarea}`);
+      if (textarea) {
+        textarea.value = '';
+      }
     } catch (err) {
       setPostError(err.message || 'Failed to post answer.');
     } finally {
@@ -517,6 +548,12 @@ export default function QuestionDetail() {
                 {postError && (
                   <div className={styles.editorErrorMessage}>
                     {postError}
+                  </div>
+                )}
+
+                {postSuccess && (
+                  <div className={styles.editorSuccessMessage}>
+                    Answer posted successfully! Your answer is now visible below.
                   </div>
                 )}
 
