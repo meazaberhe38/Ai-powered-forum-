@@ -11,6 +11,7 @@ import {
   Trash2,
   Edit2,
   Bookmark,
+  CheckCircle,
   Share2,
   Copy,
   Check,
@@ -20,6 +21,7 @@ import { questionService } from "../../services/questions/question.service.js";
 import { answerService } from "../../services/answers/answer.service.js";
 import { voteService } from "../../services/votes/vote.service.js";
 import { timeAgo, isAuthoredByUser } from "../../lib/utils.js";
+import Button from "../../components/Button/Button";
 import ui from "../../styles/pageStates.module.css";
 import styles from "./QuestionDetail.module.css";
 
@@ -236,8 +238,8 @@ export default function QuestionDetail() {
         content: newAnswer.content,
         createdAt: newAnswer.createdAt,
         updatedAt: newAnswer.updatedAt,
-        likes: 0, // New answer starts with 0 likes
-        userVote: 0, // User hasn't voted on their own answer
+        likes: 0,
+        userVote: 0,
         author: newAnswer.author || {
           id: user?.id,
           firstName: user?.firstName,
@@ -245,18 +247,13 @@ export default function QuestionDetail() {
         },
       };
 
-      // Add the new answer to the list immediately
       setAnswers((prev) => [...prev, normalizedAnswer]);
-
-      // Clear the editor and reset state
       setAnswerText("");
       setFitResult(null);
 
-      // Show success message
       setPostSuccess(true);
       setTimeout(() => setPostSuccess(false), 3000);
 
-      // Also clear the textarea DOM element to ensure UI updates
       const textarea = document.querySelector(`.${styles.editorTextarea}`);
       if (textarea) {
         textarea.value = "";
@@ -275,8 +272,8 @@ export default function QuestionDetail() {
       const { bookmarkService } =
         await import("../../services/bookmarks/bookmark.service.js");
       const res = await bookmarkService.toggleBookmark(question.id);
-      const isBookmarked = res.data?.bookmarked ?? res.bookmarked;
-      setIsBookmarked(isBookmarked);
+      const bookmarked = res.data?.bookmarked ?? res.bookmarked;
+      setIsBookmarked(bookmarked);
     } catch (err) {
       console.error("Failed to toggle bookmark", err);
       setIsBookmarked(prevBookmarked);
@@ -322,7 +319,6 @@ export default function QuestionDetail() {
       console.error("Failed to delete question", err);
       setIsDeleting(false);
       setShowDeleteConfirm(false);
-      // Optional: show error toast
     }
   };
 
@@ -377,7 +373,6 @@ export default function QuestionDetail() {
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 2000);
     } catch {
-      // fallback
       const input = document.querySelector(`.${styles.shareInput}`);
       if (input) {
         input.select();
@@ -566,6 +561,7 @@ export default function QuestionDetail() {
                 </div>
 
                 <div className={styles.threadActions}>
+                  {/* Share button — from main branch */}
                   <button
                     type="button"
                     className={styles.btnAction}
@@ -857,47 +853,35 @@ export default function QuestionDetail() {
 
                 <div className={styles.editorFooterControls}>
                   <div className={styles.validationBadgeGroup}>
-                    <button
-                      type="button"
-                      className={styles.btnValidationCheck}
+                    {/* "Check draft fit" — uses Button component from Rich-Text-Editor branch */}
+                    <Button
+                      variant="secondary"
+                      size="medium"
+                      isLoading={isCheckingFit}
+                      loadingText="Checking..."
+                      disabled={isPosting || answerText.trim().length < 20}
                       onClick={handleCheckFit}
-                      disabled={
-                        isCheckingFit ||
-                        isPosting ||
-                        answerText.trim().length < 20
-                      }
+                      icon={<CheckCircle size={14} />}
                     >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                        <polyline points="22 4 12 14.01 9 11.01" />
-                      </svg>
-                      {isCheckingFit ? "Checking..." : "Check draft fit"}
-                    </button>
+                      Check draft fit
+                    </Button>
                     <span className={styles.validationTip}>
                       Relevance only. Not grading correctness. You need at least
                       20 characters.
                     </span>
                   </div>
 
-                  <button
-                    type="button"
-                    className={`${styles.btnSubmitPost} ${isPosting ? styles.btnSubmitting : ""}`}
+                  {/* "Post Your Answer" — uses Button component from Rich-Text-Editor branch */}
+                  <Button
+                    variant="primary"
+                    size="medium"
+                    isLoading={isPosting}
+                    loadingText="Posting..."
+                    disabled={isCheckingFit || answerText.trim().length < 20}
                     onClick={handlePostAnswer}
-                    disabled={
-                      isPosting ||
-                      isCheckingFit ||
-                      answerText.trim().length < 20
-                    }
                   >
-                    {isPosting ? "Posting..." : "Post Your Answer"}
-                  </button>
+                    Post Your Answer
+                  </Button>
                 </div>
               </div>
 
@@ -906,7 +890,7 @@ export default function QuestionDetail() {
               {fitResult && (
                 <div className={styles.fitPanel}>
                   <div className={styles.fitHeader}>
-                    <span className={styles.fitBadge}>
+                    <span className={`${styles.fitBadge} ${fitLevelClass}`}>
                       Fit Score: {fitResult.fit_score}/100
                     </span>
                   </div>
@@ -948,6 +932,7 @@ export default function QuestionDetail() {
         </aside>
       </div>
 
+      {/* Share Modal — from main branch */}
       {showShareModal && (
         <div
           className={styles.modalOverlay}
