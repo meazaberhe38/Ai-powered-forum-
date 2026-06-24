@@ -11,7 +11,7 @@
  *   should use them; otherwise keep styles local to the page module.
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 
 :root {
   /* Light theme defaults */
@@ -70,12 +70,12 @@
 
   /* Shadow values */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-    0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   --shadow-focus: 0 0 0 3px rgba(249, 115, 22, 0.2);
 
   /* Border radius */
@@ -95,8 +95,9 @@
   --spacing-3xl: 4rem;
 
   /* Font stack */
-  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
-    Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-sans:
+    "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
 
   /* Font sizes */
   --text-xs: 0.75rem;
@@ -131,22 +132,21 @@
 }
 
 [data-theme="dark"] {
-  --background: #0E1116; /* Deep dark canvas */
-  --background-secondary: #0E1116; 
-  --surface: #171B22; /* Slightly lighter containers */
-  --surface-hover: #21262D;
-  --surface-container-low: #171B22;
-  --surface-container-high: #21262D;
-  --surface-container-highest: #30363D;
-  --text-primary: #F0F3F6; /* Comfortable off-white */
-  --text-secondary: #8B949E; /* Muted gray */
-  --text-tertiary: #8B949E;
-  --primary: #FF7A29; /* Calibrated brand orange */
+  --background: #0e1116; /* Deep dark canvas */
+  --background-secondary: #0e1116;
+  --surface: #171b22; /* Slightly lighter containers */
+  --surface-hover: #21262d;
+  --surface-container-low: #171b22;
+  --surface-container-high: #21262d;
+  --surface-container-highest: #30363d;
+  --text-primary: #f0f3f6; /* Comfortable off-white */
+  --text-secondary: #8b949e; /* Muted gray */
+  --text-tertiary: #8b949e;
+  --primary: #ff7a29; /* Calibrated brand orange */
   --primary-hover: #e86b20;
-  --border: #21262D; /* Subtle divider lines */
-  --border-hover: #30363D;
+  --border: #21262d; /* Subtle divider lines */
+  --border-hover: #30363d;
 }
-
 
 /* Global Resets */
 *,
@@ -159,6 +159,12 @@
 
 html {
   scroll-behavior: smooth;
+  min-height: 100%;
+}
+
+body,
+#root {
+  min-height: 100%;
 }
 
 body {
@@ -168,6 +174,9 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition:
+    background-color var(--transition-base),
+    color var(--transition-base);
 }
 
 a {
@@ -216,7 +225,8 @@ select:focus {
   outline: none;
   border-color: var(--primary) !important;
   box-shadow: 0 0 0 1px var(--primary) !important;
-  transition: border-color var(--transition-fast),
+  transition:
+    border-color var(--transition-fast),
     box-shadow var(--transition-fast);
 }
 
@@ -278,7 +288,9 @@ h6 {
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
   pointer-events: auto;
-  animation: slideInRight 0.3s ease-out forwards, fadeOut 0.3s ease-in 2.7s forwards;
+  animation:
+    slideInRight 0.3s ease-out forwards,
+    fadeOut 0.3s ease-in 2.7s forwards;
   min-width: 250px;
   border-left: 4px solid var(--border);
 }

@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 // useOutletContext removed
-import { authService } from '../../services/auth/auth.service.js';
-import { useToast } from '../../contexts/ToastContext.jsx';
-import { useAuth } from '../../contexts/AuthContext.jsx';
-import AvatarUploader from '../../components/AvatarUploader/AvatarUploader.jsx';
-import styles from './Profile.module.css';
-import Skeleton from '../../components/Skeleton/Skeleton.jsx';
+import { authService } from "../../services/auth/auth.service.js";
+import { useToast } from "../../contexts/ToastContext.jsx";
+import { useAuth } from "../../contexts/AuthContext.jsx";
+import AvatarUploader from "../../components/AvatarUploader/AvatarUploader.jsx";
+import styles from "./Profile.module.css";
+import Skeleton from "../../components/Skeleton/Skeleton.jsx";
 
 export default function Profile() {
   const { addToast } = useToast();
@@ -16,19 +16,17 @@ export default function Profile() {
   const [profile, setProfile] = useState(null);
 
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    bio: '',
+    firstName: "",
+    lastName: "",
+    bio: "",
   });
 
   const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
   const [changingPassword, setChangingPassword] = useState(false);
-
-
 
   useEffect(() => {
     async function loadProfile() {
@@ -36,12 +34,15 @@ export default function Profile() {
         const data = await authService.getProfile();
         setProfile(data);
         setFormData({
-          firstName: data.firstName || '',
-          lastName: data.lastName || '',
-          bio: data.bio || '',
+          firstName: data.firstName || "",
+          lastName: data.lastName || "",
+          bio: data.bio || "",
         });
       } catch (err) {
-        addToast({ type: 'error', message: err.message || 'Failed to load profile' });
+        addToast({
+          type: "error",
+          message: err.message || "Failed to load profile",
+        });
       } finally {
         setLoading(false);
       }
@@ -57,16 +58,22 @@ export default function Profile() {
     e.preventDefault();
     setSaving(true);
     try {
-      const updated = await authService.updateProfile({ ...formData, avatarUrl: profile.avatarUrl });
-      setProfile(updated);
-      updateUser({ 
-        firstName: updated.firstName, 
-        lastName: updated.lastName, 
-        avatar_url: updated.avatarUrl 
+      const updated = await authService.updateProfile({
+        ...formData,
+        avatarUrl: profile.avatarUrl,
       });
-      addToast({ type: 'success', message: 'Profile updated successfully' });
+      setProfile(updated);
+      updateUser({
+        firstName: updated.firstName,
+        lastName: updated.lastName,
+        avatar_url: updated.avatarUrl,
+      });
+      addToast({ type: "success", message: "Profile updated successfully" });
     } catch (err) {
-      addToast({ type: 'error', message: err.message || 'Failed to update profile' });
+      addToast({
+        type: "error",
+        message: err.message || "Failed to update profile",
+      });
     } finally {
       setSaving(false);
     }
@@ -83,7 +90,7 @@ export default function Profile() {
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      addToast({ type: 'error', message: 'New passwords do not match' });
+      addToast({ type: "error", message: "New passwords do not match" });
       return;
     }
     setChangingPassword(true);
@@ -92,10 +99,17 @@ export default function Profile() {
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword,
       });
-      addToast({ type: 'success', message: 'Password changed successfully' });
-      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      addToast({ type: "success", message: "Password changed successfully" });
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
     } catch (err) {
-      addToast({ type: 'error', message: err.message || 'Failed to change password' });
+      addToast({
+        type: "error",
+        message: err.message || "Failed to change password",
+      });
     } finally {
       setChangingPassword(false);
     }
@@ -120,20 +134,22 @@ export default function Profile() {
 
   if (!profile) return null;
 
-  const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3777';
-  const displayAvatar = profile.avatarUrl 
-    ? `${backendUrl}${profile.avatarUrl}` 
+  const backendUrl = import.meta.env.VITE_API_URL || "http://localhost:3777";
+  const displayAvatar = profile.avatarUrl
+    ? `${backendUrl}${profile.avatarUrl}`
     : `https://ui-avatars.com/api/?name=${profile.firstName}+${profile.lastName}&background=random&size=150`;
 
   return (
     <div className={styles.container}>
       <div className={styles.headerCard}>
-        <AvatarUploader 
-          currentAvatar={displayAvatar} 
-          onUpdate={handleAvatarUpdate} 
+        <AvatarUploader
+          currentAvatar={displayAvatar}
+          onUpdate={handleAvatarUpdate}
         />
         <div className={styles.headerInfo}>
-          <h2 className={styles.name}>{profile.firstName} {profile.lastName}</h2>
+          <h2 className={styles.name}>
+            {profile.firstName} {profile.lastName}
+          </h2>
           <p className={styles.email}>{profile.email}</p>
           <div className={styles.stats}>
             <div className={styles.statBox}>
@@ -188,17 +204,13 @@ export default function Profile() {
             />
           </div>
 
-          <button 
-            type="submit" 
-            className={styles.submitBtn} 
-            disabled={saving}
-          >
-            {saving ? 'Saving...' : 'Save Changes'}
+          <button type="submit" className={styles.submitBtn} disabled={saving}>
+            {saving ? "Saving..." : "Save Changes"}
           </button>
         </form>
       </div>
 
-      <div className={styles.formCard} style={{ marginTop: '20px' }}>
+      <div className={styles.formCard} style={{ marginTop: "20px" }}>
         <h3 className={styles.formTitle}>Change Password</h3>
         <form onSubmit={handlePasswordSubmit} className={styles.form}>
           <div className={styles.formGroup}>
@@ -236,12 +248,11 @@ export default function Profile() {
               />
             </div>
           </div>
-          <button 
-            type="submit" 
-            className={styles.submitBtn} 
-            disabled={changingPassword}
-          >
-            {changingPassword ? 'Changing...' : 'Change Password'}
+          <button
+            type="submit"
+            className={styles.submitBtn}
+            disabled={changingPassword}>
+            {changingPassword ? "Changing..." : "Change Password"}
           </button>
         </form>
       </div>
