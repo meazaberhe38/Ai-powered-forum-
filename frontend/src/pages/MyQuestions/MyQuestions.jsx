@@ -1,106 +1,146 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { getQuestions } from "../../services/core/question.service";
-import ReactMarkdown from "react-markdown";
 import styles from "./MyQuestions.module.css";
 
 export default function MyQuestions() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [myQuestions, setMyQuestions] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const backendUrl = import.meta.env.VITE_API_URL || "http://localhost:3777";
+
+  // ✅ FIXED FETCH (no ESLint warning)
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      if (!user?.id) return;
+
+      const data = await getQuestions({ mine: true }, user.id);
+      setQuestions(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+      setQuestions([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
-    fetchMyQuestions();
-  }, []);
-
-  const fetchMyQuestions = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const questions = await getQuestions({ mine: true }, user.id);
-      setMyQuestions(questions);
-    } catch (err) {
-      const msg =
-        err.response?.data?.msg ||
-        err.response?.data?.message ||
-        err.message;
-
-      setError(msg || "Failed to load questions");
-    } finally {
-      setIsLoading(false);
+    if (user?.id) {
+      fetchData();
     }
+  }, [user?.id, fetchData]);
+
+  // Helpers
+  const getColor = (name = "") => {
+    const colors = ["#ff6a00", "#0077cc", "#22c55e", "#a855f7", "#ef4444"];
+    let hash = 0;
+
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+
+    return colors[Math.abs(hash) % colors.length];
   };
 
-  const handleQuestionClick = (questionHash) => {
-    navigate(`/questions/${questionHash}`);
-  };
-
-  const truncateContent = (content, maxLength = 300) => {
-    if (content.length <= maxLength) return content;
-    return content.substring(0, maxLength) + "...";
-  };
+  const getInitials = (first, last) =>
+    `${first?.[0] || ""}${last?.[0] || ""}`.toUpperCase();
 
   return (
-    <div className={styles.pageContainer}>
-      <h1 className={styles.title}>My Questions</h1>
-
-      {isLoading && <p className={styles.loadingText}>Loading your questions...</p>}
-
-      {error && <p className={styles.errorText}>Error: {error}</p>}
-
-      {!isLoading && myQuestions.length === 0 && (
-        <p className={styles.emptyText}>You haven't asked any questions yet.</p>
-      )}
-
-      {!isLoading && myQuestions.length > 0 && (
+    <div className={styles.page}>
+      {/* HEADER */}
+      <div className={styles.header}>
         <div>
-          <p className={styles.countText}>
-            <strong>Found {myQuestions.length} question(s):</strong>
-          </p>
+          <h1>Your topics</h1>
+          <p>Questions you have posted.</p>
+        </div>
 
-          <div className={styles.questionsGrid}>
-            {myQuestions.map((q) => (
+        <button className={styles.newBtn} onClick={() => navigate("/ask")}>
+          + New question
+        </button>
+      </div>
+
+      {/* LIST */}
+      {loading ? (
+        <p>Loading...</p>
+      ) : questions.length === 0 ? (
+        <p>No questions found</p>
+      ) : (
+        <div className={styles.list}>
+          {questions.map((q) => {
+            const first = q.author?.firstName || "U";
+            const last = q.author?.lastName || "";
+
+            // ✅ FIXED AVATAR FIELD (matches Profile page)
+            const avatar = q.author?.avatarUrl;
+
+            const avatarSrc = avatar
+              ? avatar.startsWith("http")
+                ? avatar
+                : `${backendUrl}${avatar}`
+              : null;
+
+            return (
               <div
                 key={q.id}
-                className={styles.questionCard}
-                onClick={() => handleQuestionClick(q.questionHash || q.id)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    handleQuestionClick(q.questionHash || q.id);
-                  }
-                }}
-              >
-                <h3 className={styles.questionTitle}>
-                  {q.title}
-                </h3>
+                className={styles.card}
+                onClick={() =>
+                  navigate(`/questions/${q.questionHash || q.id}`)
+                }>
+                <div className={styles.accent} />
 
-                <div className={styles.questionContent}>
-                  <ReactMarkdown>
-                    {truncateContent(q.content)}
-                  </ReactMarkdown>
+                {/* AVATAR */}
+                <div className={styles.avatarWrap}>
+                  {avatarSrc ? (
+                    <img
+                      src={avatarSrc}
+                      className={styles.avatar}
+                      alt="avatar"
+                    />
+                  ) : (
+                    <div
+                      className={styles.fallbackAvatar}
+                      style={{ background: getColor(first + last) }}>
+                      {getInitials(first, last)}
+                    </div>
+                  )}
                 </div>
 
-                <div className={styles.questionMeta}>
-                  <span className={styles.answerCount}>
-                    {q.answerCount} answer(s)
-                  </span>
-                  <span className={styles.divider}>•</span>
-                  <span className={styles.authorInfo}>
-                    By{" "}
-                    <span className={styles.authorName}>
-                      {q.author.firstName} {q.author.lastName}
+                {/* BODY */}
+                <div className={styles.body}>
+                  <div className={styles.titleRow}>
+                    <h3>{q.title}</h3>
+                    <span className={styles.yours}>YOURS</span>
+                  </div>
+
+                  <p className={styles.preview}>
+                    {q.content?.length > 180
+                      ? q.content.slice(0, 180) + "..."
+                      : q.content}
+                  </p>
+
+                  <div className={styles.meta}>
+                    <span>{q.answerCount || 0} replies</span>
+                    <span>•</span>
+                    <span>
+                      {q.createdAt
+                        ? new Date(q.createdAt).toLocaleDateString()
+                        : "—"}
                     </span>
-                  </span>
+                    <span>•</span>
+                    <span>
+                      {first} {last}
+                    </span>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
       )}
     </div>
