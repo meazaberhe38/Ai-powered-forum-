@@ -1,30 +1,17 @@
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
 
-// ── Cloudinary configuration (shared with avatar upload) ──────────────────────
+// ── Cloudinary configuration ──────────────────────────────────────────────────
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key:    process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// ── Cloudinary storage for PDFs ───────────────────────────────────────────────
-// resource_type "raw" is required for non-image files such as PDFs.
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder:        "forum-rag-documents",
-    resource_type: "raw",
-    allowed_formats: ["pdf"],
-    // Keep the original filename (without extension) as the public_id so that
-    // Cloudinary doesn't add an extra extension suffix.
-    public_id: (req, file) => {
-      const nameWithoutExt = file.originalname.replace(/\.pdf$/i, "");
-      return `${Date.now()}-${nameWithoutExt}`;
-    },
-  },
-});
+// ── Memory storage — file arrives as req.file.buffer (no disk, no adapter) ───
+// We upload the raw buffer to Cloudinary manually in rag.service.js so the
+// binary data is never re-encoded or corrupted by multer-storage-cloudinary.
+const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
   if (file.mimetype !== "application/pdf") {
@@ -48,6 +35,34 @@ export const createDocumentMulterErrorHandler = (err, req, res, next) => {
   next(err);
 };
 
-// Export the configured cloudinary instance so other modules (rag.service.js)
-// can use it for deletion without re-configuring.
+/**
+ * Upload a Buffer to Cloudinary as a raw (non-image) resource.
+ * Returns the secure_url of the uploaded file.
+ *
+ * @param {Buffer}  buffer       - Raw PDF bytes
+ * @param {string}  originalName - Original filename (used for public_id)
+ * @returns {Promise<string>}    - Cloudinary secure_url
+ */
+export function uploadBufferToCloudinary(buffer, originalName) {
+  return new Promise((resolve, reject) => {
+    const nameWithoutExt = originalName.replace(/\.pdf$/i, "");
+    const publicId = `forum-rag-documents/${Date.now()}-${nameWithoutExt}`;
+
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        resource_type: "raw",
+        public_id: publicId,
+        // Store as-is — no transformation for raw files
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result.secure_url);
+      },
+    );
+
+    stream.end(buffer);
+  });
+}
+
+// Exported so rag.service.js can call cloudinary.uploader.destroy for deletions
 export { cloudinary };

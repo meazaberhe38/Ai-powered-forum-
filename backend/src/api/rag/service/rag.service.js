@@ -13,7 +13,7 @@ import {
 } from "../../../utils/errors/index.js";
 import { embedQuery, getGeminiClient } from "../../../utils/gemini.js";
 import { cosineSimilarity } from "../../../utils/math.js";
-import { cloudinary } from "../../../middleware/rag.upload.config.js";
+import { cloudinary, uploadBufferToCloudinary } from "../../../middleware/rag.upload.config.js";
 
 const K_CHUNKS = 5;
 
@@ -144,66 +144,46 @@ export const deleteDocumentService = async (documentId, userId) => {
 
 /**
  * Upload & Process Document
+ *
+ * Flow:
+ *   1. multer memoryStorage puts raw bytes in file.buffer — no disk, no adapter corruption
+ *   2. We parse the PDF directly from that buffer
+ *   3. We upload the same untouched buffer to Cloudinary via upload_stream
+ *   4. Store the Cloudinary URL in DB as storage_path
  */
 export async function createDocumentFromUploadService({ file, userId }) {
   validateUploadedDocument(file);
 
-  if (!userId) {
-    throw new Error("userId is required");
-  }
+  if (!userId) throw new Error("userId is required");
 
-  // multer-storage-cloudinary puts the Cloudinary secure URL on file.path
-  const cloudinaryUrl = file.path;
-  if (!cloudinaryUrl) {
-    throw new Error("Cloudinary URL is missing from uploaded file");
+  // multer memoryStorage puts raw file bytes here
+  const rawBuffer = file.buffer;
+  if (!rawBuffer || rawBuffer.length === 0) {
+    throw new Error("File buffer is empty — upload may have failed");
   }
 
   let documentId = null;
 
   try {
-    const insertDocumentSql = `
-      INSERT INTO documents
-      (
-        user_id,
-        title,
-        mime_type,
-        storage_path,
-        byte_size,
-        status
-      )
-      VALUES (?, ?, ?, ?, ?, ?)
-    `;
-
-    const documentResult = await safeExecute(insertDocumentSql, [
-      userId,
-      file.originalname,
-      file.mimetype,
-      cloudinaryUrl,         // full Cloudinary HTTPS URL
-      file.size,
-      "processing",
-    ]);
-
+    // ── 1. Insert DB record in "processing" state ──────────────────────────
+    const documentResult = await safeExecute(
+      `INSERT INTO documents (user_id, title, mime_type, storage_path, byte_size, status)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [userId, file.originalname, file.mimetype, null, file.size, "processing"],
+    );
     documentId = documentResult.insertId;
 
-    // Fetch the PDF from Cloudinary into a buffer for parsing
-    console.log("Fetching PDF from Cloudinary:", cloudinaryUrl);
-    const fetchResponse = await fetch(cloudinaryUrl);
-    if (!fetchResponse.ok) {
-      throw new Error(`Failed to fetch PDF from Cloudinary: ${fetchResponse.statusText}`);
-    }
-    const arrayBuffer = await fetchResponse.arrayBuffer();
-    let buffer = new Uint8Array(arrayBuffer);
-
+    // ── 2. Parse PDF from the in-memory buffer (no re-encoding possible) ──
     console.log("Processing PDF:", {
       originalName: file.originalname,
       size: file.size,
-      bufferLength: buffer.length,
+      bufferLength: rawBuffer.length,
     });
 
-    // Extract text with pdf-parse
-    const parser = new PDFParse(buffer);
+    // pdf-parse v2 expects Uint8Array
+    const uint8 = new Uint8Array(rawBuffer.buffer, rawBuffer.byteOffset, rawBuffer.byteLength);
+    const parser = new PDFParse(uint8);
     const result = await parser.getText();
-
     const extractedText = result.text?.trim();
 
     console.log("PDF text extracted:", {
@@ -211,10 +191,20 @@ export async function createDocumentFromUploadService({ file, userId }) {
       firstChars: extractedText?.substring(0, 100),
     });
 
-    if (!extractedText) {
-      throw new Error("No text could be extracted from PDF");
-    }
+    if (!extractedText) throw new Error("No text could be extracted from PDF");
 
+    // ── 3. Upload the same raw buffer to Cloudinary ────────────────────────
+    console.log("Uploading PDF buffer to Cloudinary...");
+    const cloudinaryUrl = await uploadBufferToCloudinary(rawBuffer, file.originalname);
+    console.log("Cloudinary URL:", cloudinaryUrl);
+
+    // Update storage_path now that we have the URL
+    await safeExecute(
+      `UPDATE documents SET storage_path = ? WHERE document_id = ?`,
+      [cloudinaryUrl, documentId],
+    );
+
+    // ── 4. Chunk + embed ───────────────────────────────────────────────────
     const chunks = chunkText(extractedText, 1000, 150);
 
     console.log("Text chunked:", {
@@ -222,53 +212,31 @@ export async function createDocumentFromUploadService({ file, userId }) {
       firstChunkLength: chunks[0]?.length,
     });
 
-    if (!chunks?.length) {
-      throw new Error("Chunking failed: no text chunks created");
-    }
+    if (!chunks?.length) throw new Error("Chunking failed: no text chunks created");
 
     for (let index = 0; index < chunks.length; index++) {
       const chunk = chunks[index];
-
       console.log(`Processing chunk ${index + 1}/${chunks.length}`);
 
       const embeddingResult = await generateQuestionEmbedding(chunk);
-
-      if (!embeddingResult?.embedding) {
-        throw new Error("Embedding generation failed");
-      }
+      if (!embeddingResult?.embedding) throw new Error("Embedding generation failed");
 
       const chunkResult = await safeExecute(
-        `
-        INSERT INTO document_chunks
-        (
-          document_id,
-          chunk_index,
-          content
-        )
-        VALUES (?, ?, ?)
-        `,
+        `INSERT INTO document_chunks (document_id, chunk_index, content) VALUES (?, ?, ?)`,
         [documentId, index, chunk],
       );
-
       const chunkId = chunkResult.insertId;
 
       await safeExecute(
-        `
-        INSERT INTO document_chunk_vectors
-        (
-          chunk_id,
-          source_text,
-          embedding,
-          status
-        )
-        VALUES (?, ?, ?, ?)
-        `,
+        `INSERT INTO document_chunk_vectors (chunk_id, source_text, embedding, status)
+         VALUES (?, ?, ?, ?)`,
         [chunkId, chunk, JSON.stringify(embeddingResult.embedding), "ready"],
       );
     }
 
     console.log("All chunks processed successfully");
 
+    // ── 5. Mark ready ──────────────────────────────────────────────────────
     await safeExecute(
       `UPDATE documents SET status = 'ready' WHERE document_id = ?`,
       [documentId],
@@ -278,8 +246,8 @@ export async function createDocumentFromUploadService({ file, userId }) {
       `SELECT * FROM documents WHERE document_id = ?`,
       [documentId],
     );
-
     return documents[0];
+
   } catch (error) {
     if (documentId) {
       await safeExecute(
@@ -287,7 +255,6 @@ export async function createDocumentFromUploadService({ file, userId }) {
         [error.message, documentId],
       );
     }
-
     throw error;
   }
 }
