@@ -59,101 +59,125 @@ function buildResetEmailHtml({ firstName, resetLink, expiryMinutes }) {
     <title>Password Reset</title>
 
     <style>
-      *{margin:0;padding:0;box-sizing:border-box;}
-
-      body{
-        background:#f4f6fb;
-        font-family:Arial, Helvetica, sans-serif;
-        color:#1f2937;
-        line-height:1.6;
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
       }
 
-      .wrapper{width:100%;padding:40px 15px;}
-
-      .container{
-        max-width:620px;
-        margin:auto;
-        background:#fff;
-        border-radius:18px;
-        overflow:hidden;
-        border:1px solid #ececec;
-        box-shadow:0 8px 30px rgba(0,0,0,.05);
+      body {
+        background: #f4f6fb;
+        font-family: Arial, Helvetica, sans-serif;
+        color: #1f2937;
+        line-height: 1.6;
       }
 
-      .header{
-        padding:35px 40px 30px;
-        border-bottom:1px solid #f0f0f0;
+      .wrapper {
+        width: 100%;
+        padding: 40px 15px;
       }
 
-            .logo-icon {
+      .container {
+        max-width: 620px;
+        margin: auto;
+        background: #fff;
+        border-radius: 18px;
+        overflow: hidden;
+        border: 1px solid #ececec;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+      }
+
+      .header {
+        padding: 35px 40px 30px;
+        border-bottom: 1px solid #f0f0f0;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .logo-icon {
         width: 52px;
         height: 52px;
+        background: #ff6b0b;
+        border-radius: 14px;
         display: flex;
         align-items: center;
         justify-content: center;
       }
+
       .logo-icon svg {
-        width: 28px;
-        height: 28px;
-        color: white;
+        width: 26px;
+        height: 26px;
+        stroke: #ffffff;
       }
 
-      .hero{
-        background:linear-gradient(135deg,#ff7a18,#ff5f00);
-        padding:45px 40px;
-        text-align:center;
-        color:#fff;
+      .hero {
+        background: linear-gradient(135deg, #ff7a18, #ff5f00);
+        padding: 45px 40px;
+        text-align: center;
+        color: #fff;
       }
 
-      .content{padding:45px 40px;}
-
-      .greeting{
-        font-size:20px;
-        font-weight:700;
-        margin-bottom:20px;
+      .content {
+        padding: 45px 40px;
       }
 
-      .button-wrapper{text-align:center;margin:40px 0;}
-
-      .button{
-        display:inline-block;
-        background:#ff6b0b;
-        color:#fff !important;
-        text-decoration:none;
-        padding:16px 38px;
-        border-radius:10px;
-        font-size:17px;
-        font-weight:bold;
+      .greeting {
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 20px;
       }
 
-      .notice{
-        background:#fff7f1;
-        border-left:5px solid #ff6b0b;
-        padding:18px;
-        border-radius:10px;
-        margin-top:35px;
+      .button-wrapper {
+        text-align: center;
+        margin: 40px 0;
       }
 
-      .link-box{
-        margin-top:30px;
-        background:#f7f8fb;
-        border:1px solid #e5e7eb;
-        padding:18px;
-        border-radius:10px;
-        word-break:break-all;
-        font-size:14px;
+      .button {
+        display: inline-block;
+        background: #ff6b0b;
+        color: #fff !important;
+        text-decoration: none;
+        padding: 16px 38px;
+        border-radius: 10px;
+        font-size: 17px;
+        font-weight: bold;
       }
 
-      .footer{
-        background:#fafafa;
-        padding:35px;
-        text-align:center;
-        border-top:1px solid #eee;
-        font-size:14px;
-        color:#6b7280;
+      .notice {
+        background: #fff7f1;
+        border-left: 5px solid #ff6b0b;
+        padding: 18px;
+        border-radius: 10px;
+        margin-top: 35px;
       }
 
-      .brand{color:#ff6b0b;font-weight:bold;}
+      .link-box {
+        margin-top: 30px;
+        background: #f7f8fb;
+        border: 1px solid #e5e7eb;
+        padding: 18px;
+        border-radius: 10px;
+        word-break: break-all;
+        font-size: 14px;
+      }
+
+      .footer {
+        background: #fafafa;
+        padding: 35px;
+        text-align: center;
+        border-top: 1px solid #eee;
+        font-size: 14px;
+        color: #6b7280;
+      }
+
+      .brand {
+        color: #ff6b0b;
+        font-weight: bold;
+      }
     </style>
   </head>
 
@@ -165,12 +189,22 @@ function buildResetEmailHtml({ firstName, resetLink, expiryMinutes }) {
 
     <div class="wrapper">
       <div class="container">
-
+        <!-- HEADER -->
         <div class="header">
           <div class="logo">
             <div class="logo-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square-icon lucide-message-square"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/></svg>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
             </div>
+
             <div>
               <h1>Evangadi Forum</h1>
               <p>Learn together. Ask with context.</p>
@@ -178,24 +212,21 @@ function buildResetEmailHtml({ firstName, resetLink, expiryMinutes }) {
           </div>
         </div>
 
+        <!-- HERO -->
         <div class="hero">
           <h2>Password Reset Request</h2>
           <p>We received a request to reset your password.</p>
         </div>
 
+        <!-- CONTENT -->
         <div class="content">
-
           <div class="greeting">
-            Hello ${escapeHtml(firstName || 'there')},
+            Hello ${escapeHtml(firstName || "there")},
           </div>
 
-          <p>
-            Someone requested a password reset for your account.
-          </p>
+          <p>Someone requested a password reset for your account.</p>
 
-          <p>
-            Click below to securely reset your password.
-          </p>
+          <p>Click below to securely reset your password.</p>
 
           <div class="button-wrapper">
             <a href="${resetLink}" class="button">Reset My Password</a>
@@ -216,16 +247,15 @@ function buildResetEmailHtml({ firstName, resetLink, expiryMinutes }) {
             <br /><br />
             ${resetLink}
           </div>
-
         </div>
 
+        <!-- FOOTER -->
         <div class="footer">
           <p>Thanks for using <span class="brand">Evangadi Forum</span></p>
           <p>Helping developers learn and grow.</p>
           <br />
           <p>© 2026 Evangadi Forum</p>
         </div>
-
       </div>
     </div>
   </body>
