@@ -6,7 +6,6 @@ import {
   deleteDocument,
   queryDocument,
   searchInDocument,
-  fetchPdfObjectUrl
 } from '../../services/rag/rag.service';
 import { Upload, FileText, Sparkles, Search, Trash2, X, XCircle, CheckCircle, Info } from 'lucide-react';
 import Button from '../../components/Button/Button';
@@ -29,14 +28,6 @@ export default function RagDocuments() {
   const [toast, setToast] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null);
   const fileInputRef = React.useRef(null);
-  const pdfBlobUrlRef = React.useRef(null);
-
-  const revokePdfBlobUrl = () => {
-    if (pdfBlobUrlRef.current) {
-      URL.revokeObjectURL(pdfBlobUrlRef.current);
-      pdfBlobUrlRef.current = null;
-    }
-  };
 
   const showToast = (title, message, type = 'error') => {
     setToast({ title, message, type });
@@ -150,23 +141,11 @@ export default function RagDocuments() {
     }
   };
 
-  const handlePreview = async (doc) => {
-    if (!doc?.id) return;
-    try {
-      revokePdfBlobUrl();
-      setPdfUrl(null);
-      const url = await fetchPdfObjectUrl(doc.id);
-      pdfBlobUrlRef.current = url;
-      setPdfUrl(url);
-    } catch (err) {
-      console.error('Failed to load PDF:', err);
-      showToast('Failed to load PDF', err.message, 'error');
-    }
+  const handlePreview = (doc) => {
+    if (!doc?.storage_path) return;
+    // Use the Cloudinary URL directly — no backend proxy needed
+    setPdfUrl(doc.storage_path);
   };
-
-  useEffect(() => {
-    return () => revokePdfBlobUrl();
-  }, []);
 
   useEffect(() => {
     if (activeDocument && activeDocument.status === 'ready') {
