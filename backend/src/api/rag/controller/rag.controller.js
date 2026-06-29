@@ -1,4 +1,5 @@
 import { StatusCodes } from "http-status-codes";
+import { getSignedCloudinaryUrl } from "../../../middleware/rag.upload.config.js";
 import {
   listDocumentsForUserService,
   getDocumentMetaService,
@@ -66,10 +67,22 @@ export const createDocumentController = async (req, res, next) => {
 /**
  * GET /api/rag/documents/:documentId/file
  *
- * Proxies the PDF through the backend by fetching it from Cloudinary
- * server-side with HTTP Basic Auth (api_key:api_secret).
- * This works for both private and public assets — the browser never
- * touches Cloudinary directly so there are no 401s.
+ * How this works:
+ *   1. Verify document ownership (authN + authZ).
+ *   2. Extract the Cloudinary public_id from the stored secure_url.
+ *   3. Generate a short-lived signed URL using the Cloudinary SDK + API secret.
+ *      Signed URLs work for both private (type=upload) and public raw assets.
+ *   4. Fetch the PDF bytes from Cloudinary server-side using the signed URL.
+ *      Server-to-server traffic is never subject to the browser delivery ACL.
+ *   5. Stream the raw bytes back to the client as application/pdf.
+ *
+ * Why NOT Basic Auth:
+ *   res.cloudinary.com (the CDN) does NOT accept API key/secret Basic Auth.
+ *   Basic Auth only works on api.cloudinary.com (Admin/Upload API endpoints).
+ *
+ * Why NOT redirect to storage_path directly:
+ *   raw type=upload assets return 401 in the browser unless the asset is
+ *   explicitly public at the Cloudinary account/folder level.
  */
 export const getDocumentFileController = async (req, res, next) => {
   try {
@@ -80,41 +93,64 @@ export const getDocumentFileController = async (req, res, next) => {
     if (!document.storage_path) {
       return res.status(StatusCodes.NOT_FOUND).json({
         success: false,
-        message: "No file URL found for this document",
+        message: "No file URL found for this document.",
       });
     }
 
     const storagePath = document.storage_path;
+    console.log("[PDF Proxy] storage_path from DB:", storagePath);
 
-    // Build HTTP Basic Auth header from Cloudinary credentials
-    const apiKey    = process.env.CLOUDINARY_API_KEY;
-    const apiSecret = process.env.CLOUDINARY_API_SECRET;
-
-    if (!apiKey || !apiSecret) {
-      console.error("CLOUDINARY_API_KEY or CLOUDINARY_API_SECRET not set");
-      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+    // ── Extract public_id from the stored Cloudinary URL ──────────────────
+    // Expected format: https://res.cloudinary.com/<cloud>/raw/upload/v<ver>/<public_id>
+    // The public_id for raw uploads does NOT have an extension appended
+    // (we fixed this by removing `format: "pdf"` from the uploader options).
+    const uploadIndex = storagePath.indexOf("/upload/");
+    if (uploadIndex === -1) {
+      console.error("[PDF Proxy] Not a Cloudinary URL, cannot extract public_id:", storagePath);
+      return res.status(StatusCodes.BAD_GATEWAY).json({
         success: false,
-        message: "Storage credentials not configured",
+        message: "Document storage URL is not a valid Cloudinary URL.",
       });
     }
 
-    const basicAuth = Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
+    let afterUpload = storagePath.slice(uploadIndex + "/upload/".length);
+    // Strip version segment if present: v1234567890/
+    afterUpload = afterUpload.replace(/^v\d+\//, "");
+    // For raw uploads WITHOUT format option, public_id has NO extension.
+    // For old uploads that may have a .pdf suffix baked in, strip it too.
+    const publicId = afterUpload.replace(/\.pdf$/i, "");
 
-    // Fetch the PDF from Cloudinary server-side with credentials
-    const cloudRes = await fetch(storagePath, {
-      headers: { Authorization: `Basic ${basicAuth}` },
-    });
+    console.log("[PDF Proxy] Extracted public_id:", publicId);
+
+    // ── Generate a signed URL (valid 1 hour) ──────────────────────────────
+    const signedUrl = getSignedCloudinaryUrl(publicId, 3600);
+    console.log("[PDF Proxy] Signed URL:", signedUrl);
+
+    // ── Fetch bytes server-side using the signed URL ───────────────────────
+    const cloudRes = await fetch(signedUrl);
 
     if (!cloudRes.ok) {
-      console.error(`Cloudinary fetch failed: ${cloudRes.status} ${cloudRes.statusText} for ${storagePath}`);
+      const body = await cloudRes.text().catch(() => "");
+      console.error("[PDF Proxy] Cloudinary fetch failed:", {
+        status:     cloudRes.status,
+        statusText: cloudRes.statusText,
+        publicId,
+        signedUrl,
+        body:       body.slice(0, 500),
+      });
       return res.status(StatusCodes.BAD_GATEWAY).json({
         success: false,
-        message: `Failed to retrieve PDF from storage (${cloudRes.status})`,
+        message: `Failed to retrieve PDF from storage (${cloudRes.status} ${cloudRes.statusText}).`,
       });
     }
 
     const pdfBuffer = Buffer.from(await cloudRes.arrayBuffer());
-    const filename = (document.title || "document.pdf").replace(/[^\w\s.-]/g, "_");
+    console.log("[PDF Proxy] Fetched bytes:", pdfBuffer.length);
+
+    // Sanitise filename for Content-Disposition
+    const filename = (document.title || "document.pdf")
+      .replace(/[^\w\s.-]/g, "_")
+      .replace(/\s+/g, "_");
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
@@ -122,7 +158,7 @@ export const getDocumentFileController = async (req, res, next) => {
     res.setHeader("Cache-Control", "private, max-age=3600");
     return res.send(pdfBuffer);
   } catch (error) {
-    console.error("getDocumentFileController error:", error?.message || error);
+    console.error("[PDF Proxy] Unhandled error:", error?.message, error?.stack);
     next(error);
   }
 };
@@ -153,9 +189,9 @@ export const searchInDocumentController = async (req, res, next) => {
   try {
     const result = await searchInDocumentService({
       documentId: req.params.documentId,
-      query: req.query.query,
-      k: req.query.k,
-      userId: req.user.id,
+      query:      req.query.query,
+      k:          req.query.k,
+      userId:     req.user.id,
     });
     res.status(StatusCodes.OK).json({
       success: true,

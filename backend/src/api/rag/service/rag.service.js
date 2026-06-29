@@ -170,11 +170,15 @@ export async function createDocumentFromUploadService({ file, userId }) {
     // worker thread, which detaches it on the main thread. Uploading after
     // parse sends an empty payload to Cloudinary ("Empty file" 400).
     console.log("Uploading PDF buffer to Cloudinary...");
-    const cloudinaryUrl = await uploadBufferToCloudinary(
-      Buffer.from(rawBuffer),
-      file.originalname,
-    );
-    console.log("Cloudinary URL:", cloudinaryUrl);
+    const { secureUrl: cloudinaryUrl, publicId: cloudinaryPublicId } =
+      await uploadBufferToCloudinary(Buffer.from(rawBuffer), file.originalname);
+
+    console.log("Cloudinary upload complete:", { cloudinaryUrl, cloudinaryPublicId });
+
+    // Sanity-check: make sure the URL is a valid HTTPS Cloudinary URL
+    if (!cloudinaryUrl.startsWith("https://res.cloudinary.com/")) {
+      throw new Error(`Unexpected Cloudinary URL format: ${cloudinaryUrl}`);
+    }
 
     // ── 2. Parse PDF from in-memory buffer (may detach underlying ArrayBuffer) ──
     console.log("Processing PDF:", {
