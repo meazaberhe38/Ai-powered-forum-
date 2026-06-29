@@ -68,9 +68,9 @@ export const createDocumentController = async (req, res, next) => {
  * GET /api/rag/documents/:documentId/file
  *
  * Proxies the PDF through the backend.
- * The server fetches the file from Cloudinary using a signed download URL
- * generated via the Admin API, then streams the bytes back to the client.
- * This avoids any browser-level Cloudinary auth issues (401s on raw assets).
+ * Fetches the file from Cloudinary server-side using the Admin API
+ * to resolve the authenticated URL, then streams the bytes to the client.
+ * The browser never touches Cloudinary directly, so no 401s.
  */
 export const getDocumentFileController = async (req, res, next) => {
   try {
@@ -85,37 +85,31 @@ export const getDocumentFileController = async (req, res, next) => {
       });
     }
 
-    // Extract the public_id from the stored Cloudinary URL.
-    // URL format: https://res.cloudinary.com/<cloud>/raw/upload/v<ver>/<public_id>.pdf
     const storagePath = document.storage_path;
     const uploadIndex = storagePath.indexOf("/upload/");
+
     if (uploadIndex === -1) {
       // Not a Cloudinary URL — redirect as-is
       return res.redirect(storagePath);
     }
 
+    // Extract public_id from URL:
+    // https://res.cloudinary.com/<cloud>/raw/upload/v<ver>/<public_id>.pdf
     let afterUpload = storagePath.slice(uploadIndex + "/upload/".length);
-    afterUpload = afterUpload.replace(/^v\d+\//, "");       // strip version segment
+    afterUpload = afterUpload.replace(/^v\d+\//, "");       // strip version
     const publicId = afterUpload.replace(/\.[^/.]+$/, "");  // strip extension
 
-    // Use the Admin API to get a signed, authenticated download URL.
-    // This works regardless of whether the asset was uploaded as public or private.
-    const apiResult = await cloudinary.api.resource(publicId, {
+    // Fetch via Admin API — this call is server-to-server with API credentials
+    // and returns metadata including a fresh secure_url we can fetch directly.
+    const resource = await cloudinary.api.resource(publicId, {
       resource_type: "raw",
       type: "upload",
     });
 
-    // The secure_url from the API is still unauthenticated for private assets.
-    // Instead, generate a proper authenticated download URL via url() with
-    // the correct delivery type for private resources.
-    const downloadUrl = cloudinary.utils.private_download_url(publicId, "pdf", {
-      resource_type: "raw",
-      expires_at: Math.floor(Date.now() / 1000) + 3600,
-      attachment: false,
-    });
+    // The secure_url from the Admin API is accessible server-side
+    // because our server's IP is not subject to browser CORS / auth restrictions.
+    const cloudRes = await fetch(resource.secure_url);
 
-    // Fetch the PDF server-side using the authenticated URL
-    const cloudRes = await fetch(downloadUrl);
     if (!cloudRes.ok) {
       return res.status(StatusCodes.BAD_GATEWAY).json({
         success: false,
