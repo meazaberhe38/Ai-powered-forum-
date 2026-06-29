@@ -1,15 +1,24 @@
 import { GoogleGenAI } from "@google/genai";
 import { safeExecute } from "../../../../db/config.js";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_EMBEDDING_MODEL =
   process.env.GEMINI_EMBEDDING_MODEL || "gemini-embedding-001";
 
-if (!GEMINI_API_KEY) {
-  throw new Error("GEMINI_API_KEY environment variable is required");
-}
+// Lazy singleton — avoids crashing at module load when the env var
+// isn't set (e.g. during CI or a misconfigured deploy).
+let _ai = null;
 
-const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+function getAiClient() {
+  if (_ai) return _ai;
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY environment variable is required");
+  }
+
+  _ai = new GoogleGenAI({ apiKey });
+  return _ai;
+}
 
 /**
  * Generate a normalized embedding for the provided question text using the Gemini API
@@ -32,7 +41,7 @@ export const generateQuestionEmbedding = async (text, options = {}) => {
       params.config = options;
     }
 
-    const response = await ai.models.embedContent(params);
+    const response = await getAiClient().models.embedContent(params);
 
     const embedding = response.embeddings?.[0]?.values;
     if (!embedding || !Array.isArray(embedding)) {
@@ -116,7 +125,7 @@ export const storeQuestionVector = async (
  */
 export const getVectorConfig = () => {
   return {
-    apiKey: GEMINI_API_KEY ? "configured" : "missing",
+    apiKey: process.env.GEMINI_API_KEY ? "configured" : "missing",
     embeddingModel: GEMINI_EMBEDDING_MODEL,
   };
 };

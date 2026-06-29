@@ -10,6 +10,10 @@ import cors from "cors";
 const app = express();
 const port = Number(process.env.PORT) || 3777;
 
+// Trust the first proxy hop (required on Render / any reverse-proxy host)
+// so express-rate-limit can read X-Forwarded-For correctly.
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(cors({
   origin: ["http://localhost:5173", "http://localhost:3000","https://ai-powered-forum-project-g4.onrender.com"]

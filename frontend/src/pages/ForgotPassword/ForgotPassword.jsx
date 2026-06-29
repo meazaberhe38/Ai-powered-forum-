@@ -38,11 +38,9 @@ export default function ForgotPassword() {
     setLoading(true);
     try {
       await authService.forgotPassword(normalizedEmail);
-      // Always show success regardless of server response details
       setSubmitted(true);
     } catch (err) {
-      // Show generic error only for network/server failures, not user existence
-      setError('Something went wrong. Please try again later.');
+      setError(err.message || 'Something went wrong. Please try again later.');
     } finally {
       setLoading(false);
     }

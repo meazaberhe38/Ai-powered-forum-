@@ -91,6 +91,8 @@ function handleAuthError(error) {
       return new Error(backendMessage || 'Invalid input data.');
     case 401:
       return new Error(backendMessage || 'Invalid email or password.');
+    case 404:
+      return new Error(backendMessage || 'Not found.');
     case 500:
       return new Error(
         'Something went wrong on our end. Please try again later.',
@@ -156,7 +158,7 @@ async function changePassword(data) {
 
 /**
  * Sends a forgot-password email request.
- * Always succeeds from the server side (anti-enumeration).
+ * Throws if no account exists for the given email.
  *
  * @param {string} email
  */

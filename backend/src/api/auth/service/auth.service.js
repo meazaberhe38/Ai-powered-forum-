@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { safeExecute } from "../../../../db/config.js";
 import {
   BadRequestError,
+  NotFoundError,
   UnauthenticatedError,
 } from "../../../utils/errors/index.js";
 import { generateResetToken, hashToken } from "../../../utils/token.js";
@@ -218,12 +219,13 @@ export const changePasswordService = async (userId, currentPassword, newPassword
 export const forgotPasswordService = async (email) => {
   const normalizedEmail = normalizeEmail(email);
 
-  // Silently do nothing if no user found (prevents enumeration)
   const rows = await safeExecute(
     "SELECT user_id, first_name FROM users WHERE email = ? LIMIT 1",
     [normalizedEmail]
   );
-  if (rows.length === 0) return;
+  if (rows.length === 0) {
+    throw new NotFoundError("No account found with that email address.");
+  }
 
   const user = rows[0];
 
