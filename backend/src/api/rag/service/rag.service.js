@@ -170,9 +170,6 @@ export async function createDocumentFromUploadService({ file, userId }) {
     // worker thread, which detaches it on the main thread. Uploading after
     // parse sends an empty payload to Cloudinary ("Empty file" 400).
     console.log("Uploading PDF buffer to Cloudinary...");
-    // #region agent log
-    fetch('http://127.0.0.1:7698/ingest/2f83031b-9ba6-42c9-b192-60411a447540',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ec5947'},body:JSON.stringify({sessionId:'ec5947',runId:'pre-fix',hypothesisId:'F',location:'rag.service.js:beforeUpload',message:'Buffer state before Cloudinary upload',data:{bufferLength:rawBuffer.length,pdfMagic:rawBuffer.slice(0,5).toString('ascii'),arrayBufferDetached:rawBuffer.buffer?.detached ?? null},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
     const cloudinaryUrl = await uploadBufferToCloudinary(
       Buffer.from(rawBuffer),
       file.originalname,
@@ -198,10 +195,6 @@ export async function createDocumentFromUploadService({ file, userId }) {
     });
 
     if (!extractedText) throw new Error("No text could be extracted from PDF");
-
-    // #region agent log
-    fetch('http://127.0.0.1:7698/ingest/2f83031b-9ba6-42c9-b192-60411a447540',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ec5947'},body:JSON.stringify({sessionId:'ec5947',runId:'pre-fix',hypothesisId:'F',location:'rag.service.js:afterParse',message:'Buffer state after PDF parse',data:{bufferLength:rawBuffer.length,arrayBufferDetached:rawBuffer.buffer?.detached ?? null},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
 
     // ── 3. Insert DB record now that we have the real storage_path ─────────
     const documentResult = await safeExecute(

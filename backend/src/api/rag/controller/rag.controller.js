@@ -72,7 +72,6 @@ export const getDocumentFileController = async (req, res, next) => {
     const { documentId } = req.params;
     const document = await assertOwnedDocument(documentId, userId);
 
-    // storage_path is now a full Cloudinary HTTPS URL
     if (!document.storage_path) {
       return res.status(StatusCodes.NOT_FOUND).json({
         success: false,
@@ -80,9 +79,21 @@ export const getDocumentFileController = async (req, res, next) => {
       });
     }
 
-    // Redirect the browser/client directly to the Cloudinary URL so it can
-    // stream the PDF without routing bytes through our server.
-    return res.redirect(document.storage_path);
+    const cloudResponse = await fetch(document.storage_path);
+    if (!cloudResponse.ok) {
+      return res.status(StatusCodes.BAD_GATEWAY).json({
+        success: false,
+        message: "Failed to retrieve PDF from storage",
+      });
+    }
+
+    const pdfBuffer = Buffer.from(await cloudResponse.arrayBuffer());
+    const filename = (document.title || "document.pdf").replace(/[^\w\s.-]/g, "_");
+
+    res.setHeader("Content-Type", document.mime_type || "application/pdf");
+    res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
+    res.setHeader("Content-Length", pdfBuffer.length);
+    return res.send(pdfBuffer);
   } catch (error) {
     console.error("Error serving PDF:", error);
     next(error);
