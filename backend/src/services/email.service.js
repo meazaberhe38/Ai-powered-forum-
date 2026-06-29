@@ -85,22 +85,17 @@ function buildResetEmailHtml({ firstName, resetLink, expiryMinutes }) {
         border-bottom:1px solid #f0f0f0;
       }
 
-      .logo{
-        display:flex;
-        align-items:center;
-        gap:14px;
+            .logo-icon {
+        width: 52px;
+        height: 52px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
-
-      .logo-icon{
-        width:52px;height:52px;
-        border-radius:14px;
-        background:#ff6b0b;
-        color:#fff;
-        font-size:28px;
-        font-weight:bold;
-        display:flex;
-        align-items:center;
-        justify-content:center;
+      .logo-icon svg {
+        width: 28px;
+        height: 28px;
+        color: white;
       }
 
       .hero{
@@ -173,7 +168,9 @@ function buildResetEmailHtml({ firstName, resetLink, expiryMinutes }) {
 
         <div class="header">
           <div class="logo">
-            <div class="logo-icon">💬</div>
+            <div class="logo-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square-icon lucide-message-square"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/></svg>
+            </div>
             <div>
               <h1>Evangadi Forum</h1>
               <p>Learn together. Ask with context.</p>
