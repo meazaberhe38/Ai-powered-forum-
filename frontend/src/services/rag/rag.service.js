@@ -22,7 +22,9 @@ export const uploadPdf = async (file) => {
     const formData = new FormData();
     formData.append('file', file);
     const response = await apiClient.post('/api/rag/documents', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: {
+        'Content-Type': undefined
+      }
     });
     return response.data.data;
   } catch (error) {
