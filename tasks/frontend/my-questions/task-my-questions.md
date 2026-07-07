@@ -1,12 +1,14 @@
-# Task: My Questions Page
+one document# Task: My Questions Page
 
 ## 1. Page Overview
+
 The My Questions page displays only the questions authored by the currently authenticated user, providing a personalized view of their forum activity.
 
 - **Path**: `/frontend/src/pages/MyQuestions/MyQuestions.jsx`
 - **Route**: `/my-questions`
 
 ## 2. Component Hierarchy
+
 ```mermaid
 flowchart TD
     A["MyQuestions (Page)"] --> B["Page Header ('My Questions')"]
@@ -21,10 +23,13 @@ flowchart TD
 ```
 
 ## 3. API Integrations
+
 Uses `question.service.js`:
+
 - `getQuestions({ mine: true })` -> `GET /api/questions?mine=true`
 
 ## 4. Detailed Logic
+
 1. **State Management**:
    - `myQuestions` array.
    - `isLoading` and `error` states.
@@ -37,6 +42,7 @@ Uses `question.service.js`:
    - Handle loading and network errors gracefully.
 
 ## 5. Git Workflow & PR Checklist
+
 ```bash
 git checkout main
 git pull origin main
@@ -48,6 +54,7 @@ git push origin feature/FE-my-questions-page
 ```
 
 ### PR Checklist (include in every PR description)
+
 ```markdown
 - [ ] Code compiles with no errors (`npm run dev` starts cleanly)
 - [ ] Postman tests pass for all endpoints in this task (backend tasks)

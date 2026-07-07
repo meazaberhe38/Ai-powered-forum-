@@ -141,11 +141,12 @@ export default function Profile() {
     if (!url) {
       return `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.firstName)}+${encodeURIComponent(profile.lastName)}&background=random&size=150`;
     }
-    if (url.startsWith('http')) return url;
-    const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3777')
-      .replace(/\/api\/?$/, '')
-      .replace(/\/$/, '');
-    return `${base}${url.startsWith('/') ? url : `/${url}`}`;
+    if (url.startsWith("http")) return url;
+    const base = import.meta.env.VITE_API_BASE_URL.replace(
+      /\/api\/?$/,
+      "",
+    ).replace(/\/$/, "");
+    return `${base}${url.startsWith("/") ? url : `/${url}`}`;
   }
 
   const displayAvatar = resolveAvatar(profile.avatarUrl);
