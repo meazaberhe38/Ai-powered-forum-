@@ -9,6 +9,9 @@ export const db = mysql.createPool({
   password: process.env.DB_PASS || "",
   database: process.env.DB_NAME || "evangadi_forum",
   port: Number(process.env.DB_PORT) || 3306,
+  ssl: {
+    rejectUnauthorized: true,
+  },
 });
 
 const ensureParams = (params) => {
