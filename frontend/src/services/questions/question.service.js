@@ -17,7 +17,7 @@ async function getQuestions({ search, page, limit } = {}) {
       params.limit = limit;
     }
 
-    const response = await apiClient.get("/api/questions", {
+    const response = await apiClient.get("/questions", {
       params,
     });
 

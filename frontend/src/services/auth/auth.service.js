@@ -6,7 +6,7 @@ import { apiClient } from '../core/api.client.js';
  */
 async function register(userData) {
   try {
-    const response = await apiClient.post('/api/auth/register', userData);
+    const response = await apiClient.post('/auth/register', userData);
     return { user: response.data.user };
   } catch (error) {
     throw handleAuthError(error);
@@ -19,7 +19,7 @@ async function register(userData) {
  */
 async function login(credentials) {
   try {
-    const response = await apiClient.post('/api/auth/login', credentials);
+    const response = await apiClient.post('/auth/login', credentials);
     const { user, token } = response.data;
 
     localStorage.setItem('token', token);
@@ -119,7 +119,7 @@ async function getProfile() {
  */
 async function updateProfile(data) {
   try {
-    const response = await apiClient.put('/api/auth/profile', data);
+    const response = await apiClient.put('/auth/profile', data);
     return response.data.profile;
   } catch (error) {
     throw handleAuthError(error);
@@ -149,7 +149,7 @@ async function uploadAvatar(file) {
  */
 async function changePassword(data) {
   try {
-    const response = await apiClient.put('/api/auth/password', data);
+    const response = await apiClient.put('/auth/password', data);
     return response.data;
   } catch (error) {
     throw handleAuthError(error);
@@ -164,7 +164,7 @@ async function changePassword(data) {
  */
 async function forgotPassword(email) {
   try {
-    const response = await apiClient.post('/api/auth/forgot-password', { email });
+    const response = await apiClient.post('/auth/forgot-password', { email });
     return response.data;
   } catch (error) {
     throw handleAuthError(error);
@@ -178,7 +178,7 @@ async function forgotPassword(email) {
  */
 async function resetPassword(data) {
   try {
-    const response = await apiClient.post('/api/auth/reset-password', data);
+    const response = await apiClient.post('/auth/reset-password', data);
     return response.data;
   } catch (error) {
     throw handleAuthError(error);

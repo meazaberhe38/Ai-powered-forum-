@@ -14,7 +14,7 @@ async function assessAnswerFit(questionHash, answerText) {
 
 async function postAnswer(questionId, content) {
   try {
-    const response = await apiClient.post('/api/answers', {
+    const response = await apiClient.post('/answers', {
       questionId,
       content,
     });

@@ -8,7 +8,7 @@ export const getQuestions = async (filters = {}, userId = null) => {
       params.mine = 'true';
     }
     
-    const response = await apiClient.get('/api/questions', { params });
+    const response = await apiClient.get('/questions', { params });
     return response.data.data || [];
   } catch (error) {
     console.error('Error fetching questions:', error);

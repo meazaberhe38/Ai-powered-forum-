@@ -6,7 +6,7 @@ import { apiClient } from "../core/api.client.js";
  */
 export async function toggleBookmark(questionId) {
   try {
-    const response = await apiClient.post("/api/bookmarks/toggle", {
+    const response = await apiClient.post("/bookmarks/toggle", {
       questionId,
     });
     return response.data;
@@ -21,7 +21,7 @@ export async function toggleBookmark(questionId) {
  */
 export async function getBookmarks({ page = 1, limit = 20 } = {}) {
   try {
-    const response = await apiClient.get("/api/bookmarks", {
+    const response = await apiClient.get("/bookmarks", {
       params: { page, limit },
     });
     return response.data;

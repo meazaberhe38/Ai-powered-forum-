@@ -2,7 +2,7 @@ import { apiClient } from '../core/api.client';
 
 export const listDocuments = async () => {
   try {
-    const response = await apiClient.get('/api/rag/documents');
+    const response = await apiClient.get('/rag/documents');
     const docs = response.data.data || [];
     return docs.map(doc => ({
       ...doc,
@@ -21,7 +21,7 @@ export const uploadPdf = async (file) => {
   try {
     const formData = new FormData();
     formData.append('file', file);
-    const response = await apiClient.post('/api/rag/documents', formData, {
+    const response = await apiClient.post('/rag/documents', formData, {
       headers: {
         'Content-Type': undefined
       }

@@ -8,7 +8,7 @@ import { apiClient } from "../core/api.client.js";
  */
 export async function castVote(targetType, targetId, voteValue) {
   try {
-    const response = await apiClient.post("/api/votes", {
+    const response = await apiClient.post("/votes", {
       targetType,
       targetId,
       voteValue,
