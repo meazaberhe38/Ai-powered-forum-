@@ -1,11 +1,7 @@
 import axios from "axios";
 
 const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
-const normalizedBaseUrl = rawBaseUrl
-  ? rawBaseUrl.endsWith("/api")
-    ? rawBaseUrl
-    : `${rawBaseUrl}/api`
-  : "/api";
+const normalizedBaseUrl = rawBaseUrl || "https://ai-powered-forum.onrender.com";
 
 /**
  * Configured axios instance for API communication.
