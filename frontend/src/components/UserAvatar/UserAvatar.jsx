@@ -14,27 +14,28 @@
  *     derived from the name (same person = same colour, always).
  */
 
-import { useState, useEffect } from 'react';
-import styles from './UserAvatar.module.css';
+import { useState, useEffect } from "react";
+import styles from "./UserAvatar.module.css";
 
-const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
+const BACKEND_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:4000/api";
 
 /* ── helpers ── */
 
 function resolveAvatarUrl(person) {
   const raw = person?.avatarUrl || person?.avatar_url;
   if (!raw) return null;
-  if (raw.startsWith('http')) return raw;
-  
+  if (raw.startsWith("http")) return raw;
+
   let baseUrl = BACKEND_URL;
-  if (baseUrl.endsWith('/api')) {
+  if (baseUrl.endsWith("/api")) {
     baseUrl = baseUrl.slice(0, -4);
-  } else if (baseUrl.endsWith('/api/')) {
+  } else if (baseUrl.endsWith("/api/")) {
     baseUrl = baseUrl.slice(0, -5);
   }
-  baseUrl = baseUrl.replace(/\/$/, '');
-  
-  const path = raw.startsWith('/') ? raw : `/${raw}`;
+  baseUrl = baseUrl.replace(/\/$/, "");
+
+  const path = raw.startsWith("/") ? raw : `/${raw}`;
   return `${baseUrl}${path}`;
 }
 
@@ -42,7 +43,7 @@ function resolveAvatarUrl(person) {
  * Deterministic hue: same name string → same colour, every time.
  * Uses a simple djb2-style hash mapped onto HSL.
  */
-function nameToColor(str = '') {
+function nameToColor(str = "") {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
@@ -51,20 +52,25 @@ function nameToColor(str = '') {
   return `hsl(${hue}, 55%, 46%)`;
 }
 
-function getInitials(firstName = '', lastName = '') {
-  return `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase() || '?';
+function getInitials(firstName = "", lastName = "") {
+  return `${firstName[0] || ""}${lastName[0] || ""}`.toUpperCase() || "?";
 }
 
 /* ── component ── */
 
-export default function UserAvatar({ user, author, size = 36, className = '' }) {
+export default function UserAvatar({
+  user,
+  author,
+  size = 36,
+  className = "",
+}) {
   const person = user || author || {};
-  const firstName = person.firstName || person.first_name || '';
-  const lastName  = person.lastName  || person.last_name  || '';
+  const firstName = person.firstName || person.first_name || "";
+  const lastName = person.lastName || person.last_name || "";
 
   const avatarUrl = resolveAvatarUrl(person);
-  const initials  = getInitials(firstName, lastName);
-  const bgColor   = nameToColor(`${firstName}${lastName}`);
+  const initials = getInitials(firstName, lastName);
+  const bgColor = nameToColor(`${firstName}${lastName}`);
 
   // Falls back to initials if the image 404s
   const [imgFailed, setImgFailed] = useState(false);
@@ -77,7 +83,7 @@ export default function UserAvatar({ user, author, size = 36, className = '' }) 
   const showImage = avatarUrl && !imgFailed;
 
   const sizeStyle = {
-    width:  size,
+    width: size,
     height: size,
     flexShrink: 0,
   };
@@ -86,10 +92,10 @@ export default function UserAvatar({ user, author, size = 36, className = '' }) 
     return (
       <img
         src={avatarUrl}
-        alt={`${firstName} ${lastName}`.trim() || 'User avatar'}
+        alt={`${firstName} ${lastName}`.trim() || "User avatar"}
         className={`${styles.avatar} ${className}`}
         style={sizeStyle}
-        referrerPolicy='no-referrer'
+        referrerPolicy="no-referrer"
         onError={() => setImgFailed(true)}
       />
     );
@@ -103,9 +109,8 @@ export default function UserAvatar({ user, author, size = 36, className = '' }) 
         background: bgColor,
         fontSize: Math.round(size * 0.38),
       }}
-      aria-label={`${firstName} ${lastName}`.trim() || 'User'}
-      role='img'
-    >
+      aria-label={`${firstName} ${lastName}`.trim() || "User"}
+      role="img">
       {initials}
     </span>
   );

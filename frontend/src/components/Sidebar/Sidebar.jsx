@@ -1,18 +1,26 @@
-import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, LogOut, MessageSquare, FileText, Moon, Sun, Bookmark } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useTheme } from '../../contexts/ThemeContext';
-import styles from './Sidebar.module.css';
+import { NavLink, useNavigate } from "react-router-dom";
+import {
+  LayoutDashboard,
+  LogOut,
+  MessageSquare,
+  FileText,
+  Moon,
+  Sun,
+  Bookmark,
+} from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
+import { useTheme } from "../../contexts/ThemeContext";
+import styles from "./Sidebar.module.css";
 
 /**
  * Primary navigation: paths must match `App.jsx` routes.
  * Add rows here when you ship new sections (e.g. Admin, Bookmarks).
  */
 const NAV_ITEMS = [
-  { icon: LayoutDashboard, label: 'Home', path: '/dashboard' },
-  { icon: Bookmark, label: 'Bookmarks', path: '/my-bookmarks' },
-  { icon: MessageSquare, label: 'Your Topics', path: '/my-questions' },
-  { icon: FileText, label: 'Knowledge Base', path: '/rag-documents' },
+  { icon: LayoutDashboard, label: "Home", path: "/dashboard" },
+  { icon: Bookmark, label: "Bookmarks", path: "/my-bookmarks" },
+  { icon: MessageSquare, label: "Your Topics", path: "/my-questions" },
+  { icon: FileText, label: "Knowledge Base", path: "/rag-documents" },
 ];
 
 export default function Sidebar({ isOpen, onClose }) {
@@ -20,43 +28,43 @@ export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
-  const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
+  const backendUrl =
+    import.meta.env.VITE_API_BASE_URL || "http://localhost:4000/api";
   const getAvatarUrl = () => {
     const avatar = user?.avatarUrl || user?.avatar_url;
     if (avatar) {
-      if (avatar.startsWith('http')) return avatar;
-      
+      if (avatar.startsWith("http")) return avatar;
+
       let baseUrl = backendUrl;
-      if (baseUrl.endsWith('/api')) {
+      if (baseUrl.endsWith("/api")) {
         baseUrl = baseUrl.slice(0, -4);
-      } else if (baseUrl.endsWith('/api/')) {
+      } else if (baseUrl.endsWith("/api/")) {
         baseUrl = baseUrl.slice(0, -5);
       }
-      baseUrl = baseUrl.replace(/\/$/, '');
-      
-      return `${baseUrl}${avatar.startsWith('/') ? avatar : `/${avatar}`}`;
+      baseUrl = baseUrl.replace(/\/$/, "");
+
+      return `${baseUrl}${avatar.startsWith("/") ? avatar : `/${avatar}`}`;
     }
-    return `https://ui-avatars.com/api/?name=${user?.firstName || 'User'}+${user?.lastName || ''}&background=random`;
+    return `https://ui-avatars.com/api/?name=${user?.firstName || "User"}+${user?.lastName || ""}&background=random`;
   };
 
   return (
-    <aside className={`${styles.sidebar} ${isOpen ? styles.open : ''}`}>
+    <aside className={`${styles.sidebar} ${isOpen ? styles.open : ""}`}>
       <div className={styles.sidebar__header}>
         <div
           className={styles.sidebar__branding}
-          onClick={() => navigate('/')}
-          title='Go to Home'
-          role='button'
+          onClick={() => navigate("/")}
+          title="Go to Home"
+          role="button"
           tabIndex={0}
-          onKeyDown={e => {
-            if (e.key === 'Enter' || e.key === ' ') {
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              navigate('/');
+              navigate("/");
             }
-          }}
-        >
+          }}>
           <div className={styles.sidebar__logo} aria-hidden>
-            <MessageSquare className={styles['sidebar__logo-icon']} size={20} />
+            <MessageSquare className={styles["sidebar__logo-icon"]} size={20} />
           </div>
           <div className={styles.sidebar__brandCopy}>
             <p className={styles.sidebar__title}>Evangadi Forum</p>
@@ -67,28 +75,27 @@ export default function Sidebar({ isOpen, onClose }) {
         </div>
       </div>
 
-      <nav className={styles.sidebar__nav} aria-label='Main navigation'>
+      <nav className={styles.sidebar__nav} aria-label="Main navigation">
         <p className={styles.sidebar__navLabel}>Navigate</p>
-        {NAV_ITEMS.map(item => (
-          <div key={item.path} className={styles['sidebar__nav-item-wrapper']}>
+        {NAV_ITEMS.map((item) => (
+          <div key={item.path} className={styles["sidebar__nav-item-wrapper"]}>
             <NavLink
               to={item.path}
               className={({ isActive }) =>
                 `${styles.sidebar__link} ${
                   isActive
-                    ? styles['sidebar__link--active']
-                    : styles['sidebar__link--inactive']
+                    ? styles["sidebar__link--active"]
+                    : styles["sidebar__link--inactive"]
                 }`
-              }
-            >
+              }>
               {({ isActive }) => (
                 <>
                   <item.icon
                     size={18}
                     className={`${styles.sidebar__icon} ${
                       isActive
-                        ? styles['sidebar__icon--active']
-                        : styles['sidebar__icon--inactive']
+                        ? styles["sidebar__icon--active"]
+                        : styles["sidebar__icon--inactive"]
                     }`}
                   />
                   <span>{item.label}</span>
@@ -101,30 +108,29 @@ export default function Sidebar({ isOpen, onClose }) {
 
       <div className={styles.sidebar__footer}>
         <button
-          type='button'
-          onClick={() => navigate('/questions/ask')}
-          className={styles.sidebar__button}
-        >
+          type="button"
+          onClick={() => navigate("/questions/ask")}
+          className={styles.sidebar__button}>
           New Question
         </button>
 
         <div className={styles.sidebar__user}>
-          <a href='/profile' className={styles.sidebar__profile}>
+          <a href="/profile" className={styles.sidebar__profile}>
             <div className={styles.sidebar__avatar}>
               <img
                 src={getAvatarUrl()}
-                alt='avatar'
-                className={styles['sidebar__avatar-image']}
-                referrerPolicy='no-referrer'
+                alt="avatar"
+                className={styles["sidebar__avatar-image"]}
+                referrerPolicy="no-referrer"
                 onError={(e) => {
                   e.currentTarget.onerror = null;
-                  e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.firstName || 'U')}+${encodeURIComponent(user?.lastName || '')}&background=random`;
+                  e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.firstName || "U")}+${encodeURIComponent(user?.lastName || "")}&background=random`;
                 }}
               />
             </div>
             <div className={styles.sidebar__info}>
               <p className={styles.sidebar__name}>
-                {user ? `${user.firstName} ${user.lastName}` : 'Guest'}
+                {user ? `${user.firstName} ${user.lastName}` : "Guest"}
               </p>
               <p className={styles.sidebar__role}>Learner</p>
             </div>
@@ -132,15 +138,14 @@ export default function Sidebar({ isOpen, onClose }) {
 
           <div className={styles.sidebar__bottomActions}>
             <button
-              type='button'
-              className={`${styles.themeToggle} ${theme === 'dark' ? styles.dark : styles.light}`}
+              type="button"
+              className={`${styles.themeToggle} ${theme === "dark" ? styles.dark : styles.light}`}
               onClick={toggleTheme}
-              aria-label='Toggle theme'
-              title='Toggle dark / light mode'
-            >
+              aria-label="Toggle theme"
+              title="Toggle dark / light mode">
               <div className={styles.themeToggleTrack}>
                 <div className={styles.themeToggleThumb}>
-                  {theme === 'light' ? (
+                  {theme === "light" ? (
                     <Moon size={16} className={styles.themeIcon} />
                   ) : (
                     <Sun size={16} className={styles.themeIcon} />
@@ -154,10 +159,9 @@ export default function Sidebar({ isOpen, onClose }) {
             </button>
 
             <button
-              type='button'
+              type="button"
               onClick={logout}
-              className={styles.sidebar__logout}
-            >
+              className={styles.sidebar__logout}>
               <LogOut size={16} />
               <span>Logout</span>
             </button>

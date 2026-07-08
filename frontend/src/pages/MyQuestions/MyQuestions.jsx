@@ -11,7 +11,8 @@ export default function MyQuestions() {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const backendUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000/api";
+  const backendUrl =
+    import.meta.env.VITE_API_BASE_URL || "http://localhost:4000/api";
 
   // ✅ FIXED FETCH (no ESLint warning)
   const fetchData = useCallback(async () => {
@@ -60,7 +61,9 @@ export default function MyQuestions() {
           <p>Questions you have posted.</p>
         </div>
 
-        <button className={styles.newBtn} onClick={() => navigate("/questions/ask")}>
+        <button
+          className={styles.newBtn}
+          onClick={() => navigate("/questions/ask")}>
           + New question
         </button>
       </div>
@@ -80,17 +83,17 @@ export default function MyQuestions() {
             const avatar = q.author?.avatarUrl;
 
             let baseUrl = backendUrl;
-            if (baseUrl.endsWith('/api')) {
+            if (baseUrl.endsWith("/api")) {
               baseUrl = baseUrl.slice(0, -4);
-            } else if (baseUrl.endsWith('/api/')) {
+            } else if (baseUrl.endsWith("/api/")) {
               baseUrl = baseUrl.slice(0, -5);
             }
-            baseUrl = baseUrl.replace(/\/$/, '');
+            baseUrl = baseUrl.replace(/\/$/, "");
 
             const avatarSrc = avatar
               ? avatar.startsWith("http")
                 ? avatar
-                : `${baseUrl}${avatar.startsWith('/') ? avatar : `/${avatar}`}`
+                : `${baseUrl}${avatar.startsWith("/") ? avatar : `/${avatar}`}`
               : null;
 
             return (
