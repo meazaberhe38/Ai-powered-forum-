@@ -1,4 +1,4 @@
-import { apiClient } from '../core/api.client.js';
+import { apiClient } from "../core/api.client.js";
 
 /**
  * Registers a new user.
@@ -6,7 +6,7 @@ import { apiClient } from '../core/api.client.js';
  */
 async function register(userData) {
   try {
-    const response = await apiClient.post('/auth/register', userData);
+    const response = await apiClient.post("/api/auth/register", userData);
     return { user: response.data.user };
   } catch (error) {
     throw handleAuthError(error);
@@ -19,11 +19,11 @@ async function register(userData) {
  */
 async function login(credentials) {
   try {
-    const response = await apiClient.post('/auth/login', credentials);
+    const response = await apiClient.post("/api/auth/login", credentials);
     const { user, token } = response.data;
 
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(user));
 
     return { user, token };
   } catch (error) {
@@ -35,29 +35,29 @@ async function login(credentials) {
  * Logs out the current user by clearing localStorage.
  */
 function logout() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
 }
 
 /**
  * Retrieves the stored JWT token from localStorage.
  */
 function getStoredToken() {
-  return localStorage.getItem('token');
+  return localStorage.getItem("token");
 }
 
 /**
  * Retrieves the stored user object from localStorage.
  */
 function getStoredUser() {
-  const userJson = localStorage.getItem('user');
+  const userJson = localStorage.getItem("user");
   if (!userJson) return null;
 
   try {
     return JSON.parse(userJson);
   } catch (error) {
     // If JSON parsing fails, clear invalid data
-    localStorage.removeItem('user');
+    localStorage.removeItem("user");
     return null;
   }
 }
@@ -74,11 +74,11 @@ function isAuthenticated() {
  */
 function handleAuthError(error) {
   if (!error.response) {
-    if (error.code === 'ECONNABORTED') {
-      return new Error('Request timed out. Please try again.');
+    if (error.code === "ECONNABORTED") {
+      return new Error("Request timed out. Please try again.");
     }
     return new Error(
-      'Unable to connect to server. Please check your internet connection.',
+      "Unable to connect to server. Please check your internet connection.",
     );
   }
 
@@ -88,17 +88,17 @@ function handleAuthError(error) {
 
   switch (status) {
     case 400:
-      return new Error(backendMessage || 'Invalid input data.');
+      return new Error(backendMessage || "Invalid input data.");
     case 401:
-      return new Error(backendMessage || 'Invalid email or password.');
+      return new Error(backendMessage || "Invalid email or password.");
     case 404:
-      return new Error(backendMessage || 'Not found.');
+      return new Error(backendMessage || "Not found.");
     case 500:
       return new Error(
-        'Something went wrong on our end. Please try again later.',
+        "Something went wrong on our end. Please try again later.",
       );
     default:
-      return new Error(backendMessage || 'An unexpected error occurred.');
+      return new Error(backendMessage || "An unexpected error occurred.");
   }
 }
 
@@ -107,7 +107,7 @@ function handleAuthError(error) {
  */
 async function getProfile() {
   try {
-    const response = await apiClient.get('/api/auth/profile');
+    const response = await apiClient.get("/api/auth/profile");
     return response.data.profile;
   } catch (error) {
     throw handleAuthError(error);
@@ -119,7 +119,7 @@ async function getProfile() {
  */
 async function updateProfile(data) {
   try {
-    const response = await apiClient.put('/auth/profile', data);
+    const response = await apiClient.put("/api/auth/profile", data);
     return response.data.profile;
   } catch (error) {
     throw handleAuthError(error);
@@ -132,10 +132,10 @@ async function updateProfile(data) {
 async function uploadAvatar(file) {
   try {
     const formData = new FormData();
-    formData.append('avatar', file);
-    const response = await apiClient.post('/api/auth/avatar', formData, {
+    formData.append("avatar", file);
+    const response = await apiClient.post("/api/auth/avatar", formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
     return response.data.avatarUrl;
@@ -149,7 +149,7 @@ async function uploadAvatar(file) {
  */
 async function changePassword(data) {
   try {
-    const response = await apiClient.put('/auth/password', data);
+    const response = await apiClient.put("/api/auth/password", data);
     return response.data;
   } catch (error) {
     throw handleAuthError(error);
@@ -164,7 +164,9 @@ async function changePassword(data) {
  */
 async function forgotPassword(email) {
   try {
-    const response = await apiClient.post('/auth/forgot-password', { email });
+    const response = await apiClient.post("/api/auth/forgot-password", {
+      email,
+    });
     return response.data;
   } catch (error) {
     throw handleAuthError(error);
@@ -178,7 +180,7 @@ async function forgotPassword(email) {
  */
 async function resetPassword(data) {
   try {
-    const response = await apiClient.post('/auth/reset-password', data);
+    const response = await apiClient.post("/api/auth/reset-password", data);
     return response.data;
   } catch (error) {
     throw handleAuthError(error);
